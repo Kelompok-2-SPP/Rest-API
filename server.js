@@ -1,6 +1,7 @@
 const express = require("express")
 const app = express()
 const cors = require("cors")
+const port = process.env.REQ_PORT || 8000
 app.use(cors())
 
 const auth = require("./router/auth")
@@ -21,6 +22,6 @@ app.use(express.static(__dirname))
 
 app.response
 
-app.listen(8000, () => {
-    console.log("Running on port 8000")
+app.listen(port, () => {
+    console.log('Runing in port', port)
 })
