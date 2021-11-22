@@ -36,7 +36,11 @@ app.get("/", async(req, res) => {
                 model: siswa,
                 as: "siswa",
                 attributes: { exclude: ['password'] },
-                include: ["spp"]
+            },
+            "spp",
+            {
+                model: spp,
+                as: "spp"
             }
         ]
     }).then(pembayaran => {

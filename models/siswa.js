@@ -11,10 +11,6 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            this.belongsTo(models.spp, {
-                foreignKey: "id_spp",
-                as: "spp"
-            })
             this.belongsTo(models.kelas, {
                 foreignKey: "id_kelas",
                 as: "kelas"
@@ -31,13 +27,15 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             allowNull: false
         },
+        nis: {
+            type: DataTypes.CHAR,
+            unique: true
+        },
         password: DataTypes.STRING,
-        nis: DataTypes.CHAR,
         nama: DataTypes.STRING,
         id_kelas: DataTypes.INTEGER,
         alamat: DataTypes.TEXT,
         no_telp: DataTypes.STRING,
-        id_spp: DataTypes.INTEGER,
     }, {
         sequelize,
         modelName: 'siswa',

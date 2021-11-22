@@ -21,9 +21,8 @@ module.exports = (sequelize, DataTypes) => {
                 as: "siswa"
             })
 
-            this.belongsTo(models.siswa, {
+            this.belongsTo(models.spp, {
                 foreignKey: "id_spp",
-                // targetKey: "id_spp",
                 as: "spp"
             })
         }
@@ -38,8 +37,8 @@ module.exports = (sequelize, DataTypes) => {
         id_petugas: DataTypes.INTEGER,
         nisn: DataTypes.STRING,
         tgl_dibayar: DataTypes.DATE,
-        bulan_dibayar: DataTypes.STRING,
-        tahun_dibayar: DataTypes.STRING,
+        bulan_dibayar: DataTypes.INTEGER,
+        tahun_dibayar: DataTypes.INTEGER,
         id_spp: DataTypes.INTEGER,
         jumlah_bayar: DataTypes.INTEGER
     }, {
