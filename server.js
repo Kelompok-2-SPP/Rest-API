@@ -20,7 +20,6 @@ app.use("/api/v1/pembayaran", pembayaran)
 
 app.use(express.static(__dirname))
 
-app.response
 
 app.listen(port, () => {
     console.log('Runing in port', port)
