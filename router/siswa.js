@@ -49,7 +49,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", async (req, res) => {
+app.post("/", access_roles(["admin"]), async (req, res) => {
   if (
     req.body.nisn &&
     req.body.password &&
@@ -64,7 +64,7 @@ app.post("/", async (req, res) => {
       req.body);
     data["password"] = md5(req.body.password);
     await siswa
-      .findOne({ where: { nisn: data.nisn, nis: data.nis} })
+      .findOne({ where: { nisn: data.nisn, nis: data.nis } })
       .then((duplicate) => {
         if (!duplicate) {
           siswa
@@ -109,7 +109,7 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.put("/", async (req, res) => {
+app.put("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.nisn) {
     let data = {};
 
@@ -167,7 +167,7 @@ app.put("/", async (req, res) => {
   }
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/", access_roles(["admin"]), async (req, res) => {
   if (req.query.nisn) {
     await siswa
       .findOne({ where: { nisn: req.query.nisn } })

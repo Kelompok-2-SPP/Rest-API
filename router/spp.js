@@ -46,7 +46,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", async (req, res) => {
+app.post("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.tahun && req.body.nominal && req.body.angkatan) {
     const data = ({ tahun, nominal, angkatan } = req.body);
     await spp
@@ -74,7 +74,7 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.put("/", async (req, res) => {
+app.put("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.id_spp) {
     let data = {};
     for (key in req.body) {
@@ -124,7 +124,7 @@ app.put("/", async (req, res) => {
   }
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/", access_roles(["admin"]), async (req, res) => {
   if (req.query.id_spp) {
     await spp
       .findOne({ where: { id_spp: req.query.id_spp } })

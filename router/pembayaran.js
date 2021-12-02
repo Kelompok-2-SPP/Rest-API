@@ -68,7 +68,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", async (req, res) => {
+app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
   if (
     req.body.id_petugas &&
     req.body.nisn &&
@@ -76,11 +76,13 @@ app.post("/", async (req, res) => {
     req.body.jumlah_bayar
   ) {
     let data = ({ id_petugas, nisn, id_spp, jumlah_bayar } = req.body);
-    const date = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
-    const datenow = new Date(date)
-    data['tgl_dibayar'] = datenow.toISOString().split('T')[0]
-    data['bulan_dibayar'] = datenow.getMonth()
-    data['tahun_dibayar'] = datenow.getFullYear()
+    const date = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+    });
+    const datenow = new Date(date);
+    data["tgl_dibayar"] = datenow.toISOString().split("T")[0];
+    data["bulan_dibayar"] = datenow.getMonth();
+    data["tahun_dibayar"] = datenow.getFullYear();
     await pembayaran
       .create(data)
       .then((result) => {
@@ -106,7 +108,7 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.put("/", async (req, res) => {
+app.put("/", access_roles(["petugas", "admin"]), async (req, res) => {
   if (req.body.id_pembayaran) {
     let data = {};
     for (key in req.body) {
@@ -157,7 +159,7 @@ app.put("/", async (req, res) => {
   }
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/", access_roles(["admin"]), async (req, res) => {
   if (req.query.id_pembayaran) {
     await pembayaran
       .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })

@@ -6,8 +6,7 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const petugas = models.petugas;
 const siswa = models.siswa;
-
-let SECRET_KEY = {
+const secretKey = {
   petugas: "petugasSPP",
   siswa: "siswaSPP",
 };
@@ -20,23 +19,42 @@ app.post("/", async (req, res) => {
     await petugas
       .findOne({ where: { username: req.body.username } })
       .then((found) => {
-        if (found.password == md5(req.body.password)) {
-          res.status(200).json({
-            status: res.statusCode,
-            message: "Authorized",
-            details: {
-              logged: true,
-              token: jwt.sign(JSON.stringify(found), SECRET_KEY.petugas),
-            },
-          });
+        if (found) {
+          if (found.password == md5(req.body.password)) {
+            res.status(200).json({
+              status: res.statusCode,
+              message: "Authorized",
+              details: {
+                logged: true,
+                token: jwt.sign(
+                  JSON.stringify(found, [
+                    "id_petugas",
+                    "username",
+                    "nama_petugas",
+                    "level",
+                    "createdAt",
+                    "updatedAt",
+                  ]),
+                  secretKey.petugas
+                ),
+              },
+            });
+          } else {
+            res.status(401).json({
+              status: res.statusCode,
+              message: "Unauthorized",
+              details: {
+                logged: false,
+                message: "Wrong password combination",
+                token: null,
+              },
+            });
+          }
         } else {
-          res.status(401).json({
+          res.status(404).json({
             status: res.statusCode,
-            message: "Unauthorized",
-            details: {
-              logged: false,
-              token: null,
-            },
+            message: "Data were not found",
+            details: "Username not found",
           });
         }
       })
@@ -49,25 +67,48 @@ app.post("/", async (req, res) => {
       });
   } else if (req.body.nisn) {
     await siswa
-      .findOne({ where: { nisn: req.body.nisn } })
+      .findOne({
+        where: { nisn: req.body.nisn },
+      })
       .then((found) => {
-        if (found.password == md5(req.body.password)) {
-          res.status(200).json({
-            status: res.statusCode,
-            message: "Authorized",
-            details: {
-              logged: true,
-              token: jwt.sign(JSON.stringify(found), SECRET_KEY.petugas),
-            },
-          });
+        if (found) {
+          if (found.password == md5(req.body.password)) {
+            res.status(200).json({
+              status: res.statusCode,
+              message: "Authorized",
+              details: {
+                logged: true,
+                token: jwt.sign(
+                  JSON.stringify(found, [
+                    "nisn",
+                    "nis",
+                    "nama",
+                    "id_kelas",
+                    "alamat",
+                    "no_telp",
+                    "cretedAt",
+                    "updatedAt",
+                  ]),
+                  secretKey.siswa
+                ),
+              },
+            });
+          } else {
+            res.status(401).json({
+              status: res.statusCode,
+              message: "Unauthorized",
+              details: {
+                logged: false,
+                message: "Wrong password combination",
+                token: null,
+              },
+            });
+          }
         } else {
-          res.status(401).json({
+          res.status(404).json({
             status: res.statusCode,
-            message: "Unauthorized",
-            details: {
-              logged: false,
-              token: null,
-            },
+            message: "Data were not found",
+            details: "Username not found",
           });
         }
       })

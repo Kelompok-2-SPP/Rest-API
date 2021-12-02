@@ -47,7 +47,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", async (req, res) => {
+app.post("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.nama_kelas && req.body.jurusan && req.body.angkatan) {
     const data = ({ nama_kelas, jurusan, angkatan } = req.body);
     await kelas
@@ -94,7 +94,7 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.put("/", async (req, res) => {
+app.put("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.id_kelas) {
     let data = {};
     for (key in req.body) {
@@ -163,7 +163,7 @@ app.put("/", async (req, res) => {
   }
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/", access_roles(["admin"]), async (req, res) => {
   if (req.query.id_kelas) {
     await kelas
       .findOne({ where: { id_kelas: req.query.id_kelas } })

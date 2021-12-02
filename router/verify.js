@@ -1,9 +1,19 @@
 const jwt = require("jsonwebtoken");
+const { default: jwtDecode } = require("jwt-decode");
+
+let token = null;
 
 auth_verify = (req, res, next) => {
+  const secretKey = {
+    petugas: "petugasSPP",
+    siswa: "siswaSPP",
+  };
+  const jwtHeader = {
+    algorithm: "HS256",
+  };
+
   // get jwt from header
   let header = req.headers.authorization;
-  let token = null;
 
   if (header != null) {
     // get token from second side
@@ -17,21 +27,13 @@ auth_verify = (req, res, next) => {
       details: "Put token on headers",
     });
   } else {
-    // jwt
-    let jwtHeader = {
-      algorithm: "HS256",
-    };
-
-    let secretKey1 = "petugasSPP";
-    let secretKey2 = "siswaSPP";
-
-    jwt.verify(token, secretKey1, jwtHeader, (err) => {
+    jwt.verify(token, secretKey.petugas, jwtHeader, (err) => {
       if (err) {
-        jwt.verify(token, secretKey2, jwtHeader, (err) => {
+        jwt.verify(token, secretKey.siswa, jwtHeader, (err) => {
           if (err) {
             res.status(401).json({
               status: res.statusCode,
-              message: "Token innvalid or expired",
+              message: "Token invalid",
               token: token,
             });
           } else {
@@ -43,6 +45,29 @@ auth_verify = (req, res, next) => {
       }
     });
   }
+};
+
+access_roles = (roles) => {
+  return (req, res, next) => {
+    decoded = jwtDecode(token);
+    allowed = false;
+
+    for (x of roles) {
+      if (x == decoded.level) {
+        allowed = true;
+      }
+    }
+
+    if (allowed) {
+      next();
+    } else {
+      res.status(401).json({
+        status: res.statusCode,
+        message: "Unauthorized",
+        details: "You're not allowed to using this method",
+      });
+    }
+  };
 };
 
 module.exports = auth_verify;

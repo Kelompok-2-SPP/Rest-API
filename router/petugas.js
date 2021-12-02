@@ -49,7 +49,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", async (req, res) => {
+app.post("/", access_roles(["admin"]), async (req, res) => {
   if (
     req.body.username &&
     req.body.password &&
@@ -103,7 +103,7 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.put("/", async (req, res) => {
+app.put("/", access_roles(["admin"]), async (req, res) => {
   if (req.body.id_petugas) {
     let data = {};
 
@@ -118,7 +118,7 @@ app.put("/", async (req, res) => {
     if (data.username) {
       await petugas
         .findOne({ where: { username: data.username } })
-        .then(()=> {
+        .then(() => {
           res.status(409).json({
             status: res.statusCode,
             message: "Username has been used",
@@ -180,7 +180,7 @@ app.put("/", async (req, res) => {
   }
 });
 
-app.delete("/", async (req, res) => {
+app.delete("/", access_roles(["admin"]), async (req, res) => {
   if (req.query.id_petugas) {
     await petugas
       .findOne({ where: { id_petugas: req.query.id_petugas } })
