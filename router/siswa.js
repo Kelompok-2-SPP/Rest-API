@@ -117,12 +117,17 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
       data[key] = req.body[key];
     }
 
+    if (req.body.new_nisn) {
+      delete data["new_nisn"]
+      data["nisn"] = req.body.new_nisn
+    }
+
     if (data.password) {
-      data["password"] = md5(data.password);
+      delete data["password"]
     }
 
     await siswa
-      .update(data, { where: { nisn: data.nisn } })
+      .update(data, { where: { nisn: req.body.nisn } })
       .then((scss) => {
         if (scss[0]) {
           siswa
@@ -162,7 +167,7 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
       status: res.statusCode,
       message: "Required body is missing !",
       details:
-        "Needed body is nisn, and password or nis or nama or id_kelas or alamat or no_telp or id_spp",
+        "Needed body is nisn, and new_nisn or nis or nama or id_kelas or alamat or no_telp or id_spp",
     });
   }
 });

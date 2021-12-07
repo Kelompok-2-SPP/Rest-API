@@ -112,18 +112,28 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
     }
 
     if (data.password) {
-      data["password"] = md5(data.password);
+      delete data["password"];
     }
 
     if (data.username) {
       await petugas
-        .findOne({ where: { username: data.username } })
-        .then(() => {
-          res.status(409).json({
-            status: res.statusCode,
-            message: "Username has been used",
-            details: "Try different username",
-          });
+        .findOne({
+          where: {
+            username: data.username,
+            id_petugas: {
+              [Op.ne]: data.id_petugas,
+            },
+          },
+        })
+        .then((surname) => {
+          console.log(surname);
+          if (surname) {
+            res.status(409).json({
+              status: res.statusCode,
+              message: "Username has been used",
+              details: "Try different username",
+            });
+          }
         })
         .catch((error) => {
           res.status(500).json({
@@ -175,7 +185,7 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
       status: res.statusCode,
       message: "Required body is missing !",
       details:
-        "Needed body is id_petugas, and username or password or nama_petugas or level",
+        "Needed body is id_petugas, and username or nama_petugas or level",
     });
   }
 });
