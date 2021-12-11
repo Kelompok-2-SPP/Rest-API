@@ -10,7 +10,7 @@ Rest API for android-based spp payment apps practice to facilitate backend commu
 ## Request Method 🧧
 
 ### GET 🎣
-All router has function keyword, to search all column (except id, uniqe, index key) 
+All router has function keyword, to search all column (except id, uniqe, index key, you still can search using nisn and nis only on siswa) 
 <code><img height=300 src="https://github.com/Kelompok-2-SPP/Rest-API/blob/master/.github/image/keyword-get.png" alt="Keyword example"></code>
 
 ### 1. [Kelas-All](https://praktek-ukk-spp.herokuapp.com/api/v1/kelas)
