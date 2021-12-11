@@ -16,11 +16,30 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
-  for (key in req.query) {
-    data[key] = {
-      [Op.like]: `%${req.query[key]}%`,
+
+  if (req.query.keyword) {
+    data = {
+      [Op.or]: [
+        {
+          tgl_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          bulan_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          tahun_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          jumlah_bayar: { [Op.like]: `%${req.query.keyword}%` },
+        },
+      ],
     };
+  } else {
+    for (key in req.query) {
+      data[key] = req.query[key];
+    }
   }
+
   await pembayaran
     .findAll({
       where: data,
@@ -43,6 +62,7 @@ app.get("/", async (req, res) => {
           as: "spp",
         },
       ],
+      order: [["createdAt", "ASC"]],
     })
     .then((pembayaran) => {
       if (pembayaran.length > 0) {
@@ -72,17 +92,13 @@ app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
   if (
     req.body.id_petugas &&
     req.body.nisn &&
+    req.body.tgl_dibayar &&
+    req.body.bulan_dibayar &&
+    req.body.tahun_dibayar &&
     req.body.id_spp &&
     req.body.jumlah_bayar
   ) {
-    let data = ({ id_petugas, nisn, id_spp, jumlah_bayar } = req.body);
-    const date = new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Jakarta",
-    });
-    const datenow = new Date(date);
-    data["tgl_dibayar"] = datenow.toISOString().split("T")[0];
-    data["bulan_dibayar"] = datenow.getMonth();
-    data["tahun_dibayar"] = datenow.getFullYear();
+    let data = ({ id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar } = req.body);
     await pembayaran
       .create(data)
       .then((result) => {
@@ -103,7 +119,7 @@ app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required body is missing !",
-      details: "Needed body is id_petugas, nisn, id_spp, jumlah_bayar",
+      details: "Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
     });
   }
 });

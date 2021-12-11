@@ -10,6 +10,9 @@ Rest API for android-based spp payment apps practice to facilitate backend commu
 ## Request Method 🧧
 
 ### GET 🎣
+All router has function keyword, to search all column (except id, uniqe, index key) 
+<code><img height=300 src="https://github.com/Kelompok-2-SPP/Rest-API/blob/master/.github/image/keyword-get.png" alt="Keyword example"></code>
+
 ### 1. [Kelas-All](https://praktek-ukk-spp.herokuapp.com/api/v1/kelas)
 <code><img height=300 src="https://github.com/Kelompok-2-SPP/Rest-API/blob/master/.github/image/kelas-get-1.png" alt="Kelas Get-1"></code>
 <code><img height=300 src="https://github.com/Kelompok-2-SPP/Rest-API/blob/master/.github/image/kelas-get-2.png" alt="Kelas Get-2"></code>

@@ -14,11 +14,27 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
-  for (key in req.query) {
-    data[key] = {
-      [Op.like]: `%${req.query[key]}%`,
+
+  if (req.query.keyword) {
+    data = {
+      [Op.or]: [
+        {
+          username: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          nama_petugas: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          level: { [Op.like]: `%${req.query.keyword}%` },
+        },
+      ],
     };
+  } else {
+    for (key in req.query) {
+      data[key] = req.query[key];
+    }
   }
+
   await petugas
     .findAll({
       where: data,

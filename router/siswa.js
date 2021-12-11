@@ -14,11 +14,33 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
-  for (key in req.query) {
-    data[key] = {
-      [Op.like]: `%${req.query[key]}%`,
+
+  if (req.query.keyword) {
+    data = {
+      [Op.or]: [
+        {
+          nisn: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          nis: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          nama: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          alamat: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          no_telp: { [Op.like]: `%${req.query.keyword}%` },
+        },
+      ],
     };
+  } else {
+    for (key in req.query) {
+      data[key] = req.query[key];
+    }
   }
+  
   await siswa
     .findAll({
       where: data,
@@ -118,12 +140,12 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
     }
 
     if (req.body.new_nisn) {
-      delete data["new_nisn"]
-      data["nisn"] = req.body.new_nisn
+      delete data["new_nisn"];
+      data["nisn"] = req.body.new_nisn;
     }
 
     if (data.password) {
-      delete data["password"]
+      delete data["password"];
     }
 
     await siswa
