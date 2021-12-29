@@ -42,19 +42,21 @@ app.post("/", async (req, res) => {
           } else {
             res.status(401).json({
               status: res.statusCode,
-              message: "Unauthorized",
+              message: "Wrong Username or Password combination",
               details: {
                 logged: false,
-                message: "Wrong password combination",
-                token: null,
-              },
+                token: null
+              }
             });
           }
         } else {
-          res.status(404).json({
+          res.status(401).json({
             status: res.statusCode,
-            message: "Data were not found",
-            details: "Username not found",
+            message: "Wrong Username or Password combination",
+            details: {
+              logged: false,
+              token: null
+            }
           });
         }
       })
@@ -96,19 +98,21 @@ app.post("/", async (req, res) => {
           } else {
             res.status(401).json({
               status: res.statusCode,
-              message: "Unauthorized",
+              message: "Wrong Username or Password combination",
               details: {
                 logged: false,
-                message: "Wrong password combination",
-                token: null,
-              },
+                token: null
+              }
             });
           }
         } else {
-          res.status(404).json({
+          res.status(401).json({
             status: res.statusCode,
-            message: "Data were not found",
-            details: "Username not found",
+            message: "Wrong Username or Password combination",
+            details: {
+              logged: false,
+              token: null
+            }
           });
         }
       })
