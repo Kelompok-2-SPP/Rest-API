@@ -35,6 +35,7 @@ app.get("/", async (req, res) => {
   await spp
     .findAll({
       where: data,
+      order: [["tahun", "ASC"]],
     })
     .then((spp) => {
       if (spp.length > 0) {
