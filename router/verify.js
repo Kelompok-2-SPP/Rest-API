@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const { default: jwtDecode } = require("jwt-decode");
 
 let token = null;
 
@@ -49,7 +48,7 @@ auth_verify = (req, res, next) => {
 
 access_roles = (roles) => {
   return (req, res, next) => {
-    decoded = jwtDecode(token);
+    decoded = jwt.decode(token, {complete: true})
     allowed = false;
 
     for (x of roles) {
