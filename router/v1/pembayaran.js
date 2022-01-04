@@ -1,29 +1,36 @@
 const express = require("express");
 const sequelize = require("sequelize");
-const models = require("../models/index");
-const verify = require("./verify");
+const models = require("../../data/models/index");
+const { auth_verify, access_roles } = require("./verify");
 const app = express();
 
 const Op = sequelize.Op;
+const pembayaran = models.pembayaran;
+const siswa = models.siswa;
+const petugas = models.petugas;
 const spp = models.spp;
 
-app.use(verify);
+app.use(auth_verify);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
+
   if (req.query.keyword) {
     data = {
       [Op.or]: [
         {
-          angkatan: { [Op.like]: `%${req.query.keyword}%` },
+          tgl_dibayar: { [Op.like]: `%${req.query.keyword}%` },
         },
         {
-          tahun: { [Op.like]: `%${req.query.keyword}%` },
+          bulan_dibayar: { [Op.like]: `%${req.query.keyword}%` },
         },
         {
-          nominal: { [Op.like]: `%${req.query.keyword}%` },
+          tahun_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          jumlah_bayar: { [Op.like]: `%${req.query.keyword}%` },
         },
       ],
     };
@@ -32,23 +39,43 @@ app.get("/", async (req, res) => {
       data[key] = req.query[key];
     }
   }
-  await spp
+
+  await pembayaran
     .findAll({
       where: data,
-      order: [["tahun", "ASC"]],
+      include: [
+        "petugas",
+        {
+          model: petugas,
+          as: "petugas",
+          attributes: { exclude: ["password"] },
+        },
+        "siswa",
+        {
+          model: siswa,
+          as: "siswa",
+          attributes: { exclude: ["password"] },
+        },
+        "spp",
+        {
+          model: spp,
+          as: "spp",
+        },
+      ],
+      order: [["createdAt", "ASC"]],
     })
-    .then((spp) => {
-      if (spp.length > 0) {
+    .then((pembayaran) => {
+      if (pembayaran.length > 0) {
         res.status(200).json({
           status: res.statusCode,
           message: "",
-          details: spp,
+          details: pembayaran,
         });
       } else {
         res.status(404).json({
           status: res.statusCode,
           message: "Data were not found",
-          details: null,
+          details: pembayaran,
         });
       }
     })
@@ -61,10 +88,26 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", access_roles(["admin"]), async (req, res) => {
-  if (req.body.tahun && req.body.nominal && req.body.angkatan) {
-    const data = ({ tahun, nominal, angkatan } = req.body);
-    await spp
+app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
+  if (
+    req.body.id_petugas &&
+    req.body.nisn &&
+    req.body.tgl_dibayar &&
+    req.body.bulan_dibayar &&
+    req.body.tahun_dibayar &&
+    req.body.id_spp &&
+    req.body.jumlah_bayar
+  ) {
+    let data = ({
+      id_petugas,
+      nisn,
+      tgl_dibayar,
+      bulan_dibayar,
+      tahun_dibayar,
+      id_spp,
+      jumlah_bayar,
+    } = req.body);
+    await pembayaran
       .create(data)
       .then((result) => {
         res.status(201).json({
@@ -84,23 +127,24 @@ app.post("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required body is missing !",
-      details: "Needed body is tahun, nominal, angkatan",
+      details:
+        "Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
     });
   }
 });
 
-app.put("/", access_roles(["admin"]), async (req, res) => {
-  if (req.body.id_spp) {
+app.put("/", access_roles(["petugas", "admin"]), async (req, res) => {
+  if (req.body.id_pembayaran) {
     let data = {};
     for (key in req.body) {
       data[key] = req.body[key];
     }
-    await spp
-      .update(data, { where: { id_spp: data.id_spp } })
+    await pembayaran
+      .update(data, { where: { id_pembayaran: data.id_pembayaran } })
       .then((scss) => {
         if (scss[0]) {
-          spp
-            .findOne({ where: { id_spp: data.id_spp } })
+          pembayaran
+            .findOne({ where: { id_pembayaran: data.id_pembayaran } })
             .then((resu) => {
               res.status(200).json({
                 status: res.statusCode,
@@ -111,8 +155,8 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
+                message: "Something went wrong on server side" + error.message,
+                details: null,
               });
             });
         } else {
@@ -134,19 +178,20 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required body is missing !",
-      details: "Needed body is id_spp, and tahun or nominal or angkatan",
+      details:
+        "Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
     });
   }
 });
 
 app.delete("/", access_roles(["admin"]), async (req, res) => {
-  if (req.query.id_spp) {
-    await spp
-      .findOne({ where: { id_spp: req.query.id_spp } })
+  if (req.query.id_pembayaran) {
+    await pembayaran
+      .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })
       .then((resu) => {
         if (resu) {
-          spp
-            .destroy({ where: { id_spp: req.body.id_spp } })
+          pembayaran
+            .destroy({ where: { id_pembayaran: req.query.id_pembayaran } })
             .then(
               res.status(200).json({
                 status: res.statusCode,
@@ -157,8 +202,8 @@ app.delete("/", access_roles(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
+                message: "Something went wrong on server side" + error.message,
+                details: null,
               });
             });
         } else {
@@ -180,7 +225,7 @@ app.delete("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required params is missing !",
-      details: "Needed params is id_spp",
+      details: "Needed params is id_pembayaran",
     });
   }
 });

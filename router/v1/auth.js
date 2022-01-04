@@ -1,5 +1,5 @@
 const express = require("express");
-const models = require("../models/index");
+const models = require("../../data/models/index");
 const md5 = require("md5");
 const jwt = require("jsonwebtoken");
 
@@ -45,8 +45,8 @@ app.post("/", async (req, res) => {
               message: "Wrong Username or Password combination",
               details: {
                 logged: false,
-                token: null
-              }
+                token: null,
+              },
             });
           }
         } else {
@@ -55,16 +55,16 @@ app.post("/", async (req, res) => {
             message: "Wrong Username or Password combination",
             details: {
               logged: false,
-              token: null
-            }
+              token: null,
+            },
           });
         }
       })
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side" + error.message,
+          details: null,
         });
       });
   } else if (req.body.nisn) {
@@ -101,8 +101,8 @@ app.post("/", async (req, res) => {
               message: "Wrong Username or Password combination",
               details: {
                 logged: false,
-                token: null
-              }
+                token: null,
+              },
             });
           }
         } else {
@@ -111,23 +111,23 @@ app.post("/", async (req, res) => {
             message: "Wrong Username or Password combination",
             details: {
               logged: false,
-              token: null
-            }
+              token: null,
+            },
           });
         }
       })
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side" + error.message,
+          details: null,
         });
       });
   } else {
-    res.status(422).json({
+    res.status(500).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details: "Needed body is username or nisn, password",
+      message: "Something went wrong on server side" + error.message,
+      details: null,
     });
   }
 });

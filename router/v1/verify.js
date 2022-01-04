@@ -22,8 +22,8 @@ auth_verify = (req, res, next) => {
   if (token == null) {
     res.status(401).json({
       status: res.statusCode,
-      message: "Unauthorized",
-      details: "Put token on headers",
+      message: "Unauthorized, Put token on headers",
+      details: null,
     });
   } else {
     jwt.verify(token, secretKey.petugas, jwtHeader, (err) => {
@@ -33,7 +33,10 @@ auth_verify = (req, res, next) => {
             res.status(401).json({
               status: res.statusCode,
               message: "Token invalid",
-              token: token,
+              details: {
+                logged: false,
+                token: token,
+              },
             });
           } else {
             next();
@@ -48,7 +51,7 @@ auth_verify = (req, res, next) => {
 
 access_roles = (roles) => {
   return (req, res, next) => {
-    decoded = jwt.decode(token, {complete: true})
+    decoded = jwt.decode(token, { complete: true });
     allowed = false;
 
     for (x of roles) {
@@ -62,11 +65,14 @@ access_roles = (roles) => {
     } else {
       res.status(401).json({
         status: res.statusCode,
-        message: "Unauthorized",
-        details: "You're not allowed to using this method",
+        message: "Unauthorized, You're not allowed to using this method",
+        details: null,
       });
     }
   };
 };
 
-module.exports = auth_verify;
+module.exports = {
+  auth_verify,
+  access_roles,
+};

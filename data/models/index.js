@@ -4,11 +4,11 @@ const fs = require("fs");
 const path = require("path");
 const Sequelize = require("sequelize");
 const basename = path.basename(__filename);
-const config = require(__dirname + "/../config/config.json")["database"];
+const config = require(__dirname + "/../../data/config.json")["database"];
 const db = {};
 
-let sequelize;
-sequelize = new Sequelize(
+// Init db connection
+let sequelize = new Sequelize(
   config.database,
   config.username,
   config.password,
@@ -34,6 +34,7 @@ Object.keys(db).forEach((modelName) => {
     db[modelName].associate(db);
   }
 });
+
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;

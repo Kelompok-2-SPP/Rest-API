@@ -1,11 +1,11 @@
 const express = require("express");
 const sequelize = require("sequelize");
-const models = require("../models/index");
+const models = require("../models");
 const verify = require("./verify");
 const app = express();
 
 const Op = sequelize.Op;
-const kelas = models.kelas;
+const spp = models.spp;
 
 app.use(verify);
 app.use(express.json());
@@ -13,18 +13,17 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
-
   if (req.query.keyword) {
     data = {
       [Op.or]: [
         {
-          nama_kelas: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          jurusan: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
           angkatan: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          tahun: { [Op.like]: `%${req.query.keyword}%` },
+        },
+        {
+          nominal: { [Op.like]: `%${req.query.keyword}%` },
         },
       ],
     };
@@ -33,18 +32,17 @@ app.get("/", async (req, res) => {
       data[key] = req.query[key];
     }
   }
-
-  await kelas
+  await spp
     .findAll({
       where: data,
-      order: [["nama_kelas", "ASC"]],
+      order: [["tahun", "ASC"]],
     })
-    .then((kelas) => {
-      if (kelas.length > 0) {
+    .then((spp) => {
+      if (spp.length > 0) {
         res.status(200).json({
           status: res.statusCode,
           message: "",
-          details: kelas,
+          details: spp,
         });
       } else {
         res.status(404).json({
@@ -64,35 +62,16 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/", access_roles(["admin"]), async (req, res) => {
-  if (req.body.nama_kelas && req.body.jurusan && req.body.angkatan) {
-    const data = ({ nama_kelas, jurusan, angkatan } = req.body);
-    await kelas
-      .findOne({ where: { nama_kelas: data.nama_kelas } })
-      .then((duplicate) => {
-        if (!duplicate) {
-          kelas
-            .create(data)
-            .then((result) => {
-              res.status(201).json({
-                status: res.statusCode,
-                message: "Data has been inserted",
-                details: result,
-              });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
-        } else {
-          res.status(409).json({
-            status: res.statusCode,
-            message: "Nama kelas has been used",
-            details: "Try different nama_kelas",
-          });
-        }
+  if (req.body.tahun && req.body.nominal && req.body.angkatan) {
+    const data = ({ tahun, nominal, angkatan } = req.body);
+    await spp
+      .create(data)
+      .then((result) => {
+        res.status(201).json({
+          status: res.statusCode,
+          message: "Data has been inserted",
+          details: result,
+        });
       })
       .catch((error) => {
         res.status(500).json({
@@ -105,48 +84,29 @@ app.post("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required body is missing !",
-      details: "Needed body is nama_kelas, jurusan, angkatan",
+      details: "Needed body is tahun, nominal, angkatan",
     });
   }
 });
 
 app.put("/", access_roles(["admin"]), async (req, res) => {
-  if (req.body.id_kelas) {
+  if (req.body.id_spp) {
     let data = {};
     for (key in req.body) {
       data[key] = req.body[key];
     }
-    await kelas
-      .findOne({ where: { nama_kelas: data.nama_kelas } })
-      .then((find) => {
-        if (!find) {
-          kelas
-            .update(data, { where: { id_kelas: data.id_kelas } })
-            .then((scss) => {
-              if (scss[0]) {
-                kelas
-                  .findOne({ where: { id_kelas: data.id_kelas } })
-                  .then((resu) => {
-                    res.status(200).json({
-                      status: res.statusCode,
-                      message: "Data succesfully updated",
-                      details: resu,
-                    });
-                  })
-                  .catch((error) => {
-                    res.status(500).json({
-                      status: res.statusCode,
-                      message: "Something went wrong on server side",
-                      details: error.message,
-                    });
-                  });
-              } else {
-                res.status(404).json({
-                  status: res.statusCode,
-                  message: "Data were not found",
-                  details: null,
-                });
-              }
+    await spp
+      .update(data, { where: { id_spp: data.id_spp } })
+      .then((scss) => {
+        if (scss[0]) {
+          spp
+            .findOne({ where: { id_spp: data.id_spp } })
+            .then((resu) => {
+              res.status(200).json({
+                status: res.statusCode,
+                message: "Data succesfully updated",
+                details: resu,
+              });
             })
             .catch((error) => {
               res.status(500).json({
@@ -156,10 +116,10 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
               });
             });
         } else {
-          res.status(409).json({
+          res.status(404).json({
             status: res.statusCode,
-            message: "Nama kelas has been used",
-            details: "Try different nama_kelas",
+            message: "Data were not found",
+            details: null,
           });
         }
       })
@@ -174,24 +134,24 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required body is missing !",
-      details: "Needed body is id_kelas, and nama_kelas or jurusan or angkatan",
+      details: "Needed body is id_spp, and tahun or nominal or angkatan",
     });
   }
 });
 
 app.delete("/", access_roles(["admin"]), async (req, res) => {
-  if (req.query.id_kelas) {
-    await kelas
-      .findOne({ where: { id_kelas: req.query.id_kelas } })
+  if (req.query.id_spp) {
+    await spp
+      .findOne({ where: { id_spp: req.query.id_spp } })
       .then((resu) => {
         if (resu) {
-          kelas
-            .destroy({ where: { id_kelas: req.query.id_kelas } })
+          spp
+            .destroy({ where: { id_spp: req.body.id_spp } })
             .then(
               res.status(200).json({
                 status: res.statusCode,
                 message: "Data succesfully deleted",
-                details: resu,
+                data: resu,
               })
             )
             .catch((error) => {
@@ -220,7 +180,7 @@ app.delete("/", access_roles(["admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message: "Required params is missing !",
-      details: "Needed params is id_kelas",
+      details: "Needed params is id_spp",
     });
   }
 });
