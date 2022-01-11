@@ -98,9 +98,9 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     }
     await spp
       .update(data, { where: { id_spp: data.id_spp } })
-      .then((scss) => {
+      .then(async(scss) => {
         if (scss[0]) {
-          spp
+          await spp
             .findOne({ where: { id_spp: data.id_spp } })
             .then((resu) => {
               res.status(200).json({
@@ -146,9 +146,9 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_spp) {
     await spp
       .findOne({ where: { id_spp: req.query.id_spp } })
-      .then((resu) => {
+      .then(async(resu) => {
         if (resu) {
-          spp
+          await spp
             .destroy({ where: { id_spp: req.body.id_spp } })
             .then(
               res.status(200).json({

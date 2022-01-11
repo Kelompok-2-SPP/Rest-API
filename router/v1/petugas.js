@@ -66,18 +66,14 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/", accessLimit(["admin"]), async (req, res) => {
-  if (
-    req.body.username &&
-    req.body.password &&
-    req.body.nama_petugas
-  ) {
+  if (req.body.username && req.body.password && req.body.nama_petugas) {
     let data = ({ username, nama_petugas, level } = req.body);
     data["password"] = await passEncrypt(data.username, data.password);
     await petugas
       .findOne({ where: { username: data.username } })
-      .then((duplicate) => {
+      .then(async (duplicate) => {
         if (!duplicate) {
-          petugas
+         await petugas
             .create(data)
             .then((result) => {
               delete result.dataValues.password;
@@ -122,18 +118,44 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
 
 app.put("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.id_petugas) {
+    let username = true;
     let data = {};
 
     for (key in req.body) {
       data[key] = req.body[key];
     }
 
+    if (data.username) {
+      await petugas
+        .findOne({
+          where: {
+            username: data.username,
+            id_petugas: {
+              [Op.ne]: data.id_petugas,
+            },
+          },
+        })
+        .then(async (surname) => {
+          username = !surname;
+        })
+        .catch((error) => {
+          res.status(500).json({
+            status: res.statusCode,
+            message: "Something went wrong on server side, " + error.message,
+            details: null,
+          });
+        });
+    }
+
     if (data.password) {
       await petugas
         .findOne({ where: { id_petugas: data.id_petugas } })
-        .then(async(user) => {
+        .then(async (user) => {
           if (user) {
-            data["password"] = await passEncrypt(user.username, data.password);
+            data["password"] = await passEncrypt(
+              data.username ? data.username : user.username,
+              data.password
+            );
           } else {
             res.status(404).json({
               status: res.statusCode,
@@ -151,21 +173,33 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         });
     }
 
-    if (data.username) {
+    if (username) {
       await petugas
-        .findOne({
-          where: {
-            username: data.username,
-            id_petugas: {
-              [Op.ne]: data.id_petugas,
-            },
-          },
-        })
-        .then((surname) => {
-          if (surname) {
-            res.status(409).json({
+        .update(data, { where: { id_petugas: data.id_petugas } })
+        .then(async (scss) => {
+          if (scss[0]) {
+            await petugas
+              .findOne({ where: { id_petugas: data.id_petugas } })
+              .then((resu) => {
+                delete resu.dataValues.password;
+                res.status(200).json({
+                  status: res.statusCode,
+                  message: "Data succesfully updated",
+                  details: resu,
+                });
+              })
+              .catch((error) => {
+                res.status(500).json({
+                  status: res.statusCode,
+                  message:
+                    "Something went wrong on server side, " + error.message,
+                  details: null,
+                });
+              });
+          } else {
+            res.status(404).json({
               status: res.statusCode,
-              message: "Username has been used, Try different username",
+              message: "Data were not found",
               details: null,
             });
           }
@@ -177,45 +211,13 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             details: null,
           });
         });
-    }
-
-    await petugas
-      .update(data, { where: { id_petugas: data.id_petugas } })
-      .then((scss) => {
-        if (scss[0]) {
-          petugas
-            .findOne({ where: { id_petugas: data.id_petugas } })
-            .then((resu) => {
-              delete resu.dataValues.password;
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully updated",
-                details: resu,
-              });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message:
-                  "Something went wrong on server side, " + error.message,
-                details: null,
-              });
-            });
-        } else {
-          res.status(404).json({
-            status: res.statusCode,
-            message: "Data were not found",
-            details: null,
-          });
-        }
-      })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side, " + error.message,
-          details: null,
-        });
+    } else if (!username) {
+      res.status(409).json({
+        status: res.statusCode,
+        message: "Username has been used, Try different username",
+        details: null,
       });
+    }
   } else {
     res.status(422).json({
       status: res.statusCode,
@@ -230,10 +232,10 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_petugas) {
     await petugas
       .findOne({ where: { id_petugas: req.query.id_petugas } })
-      .then((resu) => {
+      .then(async (resu) => {
         if (resu) {
           delete resu.dataValues.password;
-          petugas
+          await petugas
             .destroy({ where: { id_petugas: req.query.id_petugas } })
             .then(
               res.status(200).json({

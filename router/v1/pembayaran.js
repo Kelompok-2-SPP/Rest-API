@@ -141,9 +141,9 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
     }
     await pembayaran
       .update(data, { where: { id_pembayaran: data.id_pembayaran } })
-      .then((scss) => {
+      .then(async(scss) => {
         if (scss[0]) {
-          pembayaran
+          await pembayaran
             .findOne({ where: { id_pembayaran: data.id_pembayaran } })
             .then((resu) => {
               res.status(200).json({
@@ -189,9 +189,9 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_pembayaran) {
     await pembayaran
       .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })
-      .then((resu) => {
+      .then(async (resu) => {
         if (resu) {
-          pembayaran
+          await pembayaran
             .destroy({ where: { id_pembayaran: req.query.id_pembayaran } })
             .then(
               res.status(200).json({

@@ -96,9 +96,9 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
           ],
         },
       })
-      .then((duplicate) => {
+      .then(async (duplicate) => {
         if (!duplicate) {
-          siswa
+          await siswa
             .create(data)
             .then((result) => {
               delete result.dataValues.password;
@@ -143,6 +143,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
 
 app.put("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.nisn) {
+    let {nisn, nis} = true
     let data = {};
 
     for (key in req.body) {
@@ -166,13 +167,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then((find) => {
-          if (find) {
-            res.status(409).json({
-              status: res.statusCode,
-              message: "Nisn has been used, Try different nisn",
-              details: null,
-            });
-          }
+          nisn = !find
         })
         .catch((error) => {
           res.status(500).json({
@@ -198,13 +193,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then((find) => {
-          if (find) {
-            res.status(409).json({
-              status: res.statusCode,
-              message: "Nis has been used, Try different nis",
-              details: null,
-            });
-          }
+          nis = !find
         })
         .catch((error) => {
           res.status(500).json({
@@ -219,11 +208,13 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
       data["password"] = await passEncrypt(data.nisn, data.password);
     }
     
-    await siswa
+
+    if(nisn && nis){
+      await siswa
       .update(data, { where: {nisn: req.body.nisn} })
-      .then((scss) => {
+      .then(async (scss) => {
         if (scss[0]) {
-          siswa
+          await siswa
             .findOne({ where: { nisn: data.nisn } })
             .then((resu) => {
               delete resu.dataValues.password;
@@ -256,6 +247,19 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           details: null,
         });
       });
+    } else if(!nisn){
+      res.status(409).json({
+        status: res.statusCode,
+        message: "Nisn has been used, Try different nisn",
+        details: null,
+      });
+    } else if (!nis){
+      res.status(409).json({
+        status: res.statusCode,
+        message: "Nis has been used, Try different nis",
+        details: null,
+      });
+    }
   } else {
     res.status(422).json({
       status: res.statusCode,
@@ -270,10 +274,10 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.nisn) {
     await siswa
       .findOne({ where: { nisn: req.query.nisn } })
-      .then((resu) => {
+      .then(async(resu) => {
         if (resu) {
           delete resu.dataValues.password;
-          siswa
+          await siswa
             .destroy({ where: { nisn: req.query.nisn } })
             .then(
               res.status(200).json({

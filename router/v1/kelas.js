@@ -68,9 +68,9 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
     const data = ({ nama_kelas, jurusan, angkatan } = req.body);
     await kelas
       .findOne({ where: { nama_kelas: data.nama_kelas } })
-      .then((duplicate) => {
+      .then(async (duplicate) => {
         if (!duplicate) {
-          kelas
+          await kelas
             .create(data)
             .then((result) => {
               res.status(201).json({
@@ -114,6 +114,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
 
 app.put("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.id_kelas) {
+    let namaKelas = true;
     let data = {};
     for (key in req.body) {
       data[key] = req.body[key];
@@ -128,53 +129,8 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             },
           },
         })
-        .then((namakelas) => {
-          if (namakelas) {
-            res.status(409).json({
-              status: res.statusCode,
-              message: "Nama kelas has been used, Try different nama_kelas",
-              details: null,
-            });
-          } else {
-            kelas
-              .update(data, { where: { id_kelas: data.id_kelas } })
-              .then((scss) => {
-                if (scss[0]) {
-                  kelas
-                    .findOne({ where: { id_kelas: data.id_kelas } })
-                    .then((resu) => {
-                      res.status(200).json({
-                        status: res.statusCode,
-                        message: "Data succesfully updated",
-                        details: resu,
-                      });
-                    })
-                    .catch((error) => {
-                      res.status(500).json({
-                        status: res.statusCode,
-                        message:
-                          "Something went wrong on server side, " +
-                          error.message,
-                        details: null,
-                      });
-                    });
-                } else {
-                  res.status(404).json({
-                    status: res.statusCode,
-                    message: "Data were not found",
-                    details: null,
-                  });
-                }
-              })
-              .catch((error) => {
-                res.status(500).json({
-                  status: res.statusCode,
-                  message:
-                    "Something went wrong on server side" + error.message,
-                  details: null,
-                });
-              });
-          }
+        .then((nama_kelas) => {
+          namaKelas = !nama_kelas;
         })
         .catch((error) => {
           res.status(500).json({
@@ -183,6 +139,51 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             details: null,
           });
         });
+    }
+
+    if (namaKelas) {
+      await kelas
+        .update(data, { where: { id_kelas: data.id_kelas } })
+        .then(async (scss) => {
+          if (scss[0]) {
+            await kelas
+              .findOne({ where: { id_kelas: data.id_kelas } })
+              .then((resu) => {
+                res.status(200).json({
+                  status: res.statusCode,
+                  message: "Data succesfully updated",
+                  details: resu,
+                });
+              })
+              .catch((error) => {
+                res.status(500).json({
+                  status: res.statusCode,
+                  message:
+                    "Something went wrong on server side, " + error.message,
+                  details: null,
+                });
+              });
+          } else {
+            res.status(404).json({
+              status: res.statusCode,
+              message: "Data were not found",
+              details: null,
+            });
+          }
+        })
+        .catch((error) => {
+          res.status(500).json({
+            status: res.statusCode,
+            message: "Something went wrong on server side" + error.message,
+            details: null,
+          });
+        });
+    } else if (!namaKelas) {
+      res.status(409).json({
+        status: res.statusCode,
+        message: "Nama Kelas has been used, Try different nama kelas",
+        details: null,
+      });
     }
   } else {
     res.status(422).json({
@@ -198,9 +199,9 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_kelas) {
     await kelas
       .findOne({ where: { id_kelas: req.query.id_kelas } })
-      .then((resu) => {
+      .then(async (resu) => {
         if (resu) {
-          kelas
+          await kelas
             .destroy({ where: { id_kelas: req.query.id_kelas } })
             .then(
               res.status(200).json({
