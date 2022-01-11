@@ -1,7 +1,7 @@
 const express = require("express");
 const sequelize = require("sequelize");
 const models = require("../../data/models/index");
-const { auth_verify, access_roles } = require("./verify");
+const { authVerify, accessLimit } = require("../../domain/utils");
 const app = express();
 
 const Op = sequelize.Op;
@@ -10,7 +10,7 @@ const siswa = models.siswa;
 const petugas = models.petugas;
 const spp = models.spp;
 
-app.use(auth_verify);
+app.use(authVerify);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -88,7 +88,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
+app.post("/", accessLimit(["petugas", "admin"]), async (req, res) => {
   if (
     req.body.id_petugas &&
     req.body.nisn &&
@@ -133,7 +133,7 @@ app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
   }
 });
 
-app.put("/", access_roles(["petugas", "admin"]), async (req, res) => {
+app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
   if (req.body.id_pembayaran) {
     let data = {};
     for (key in req.body) {
@@ -184,7 +184,7 @@ app.put("/", access_roles(["petugas", "admin"]), async (req, res) => {
   }
 });
 
-app.delete("/", access_roles(["admin"]), async (req, res) => {
+app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_pembayaran) {
     await pembayaran
       .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })

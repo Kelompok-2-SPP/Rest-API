@@ -102,13 +102,12 @@ async function insKelas(namaKelas, jurusan, angkatan) {
     });
 }
 
-async function putKelas(idKelas, namaKelas, jurusan, angkatan) {
+async function putKelas(idKelas, data) {
   const data = {
     nama_kelas: namaKelas,
     jurusan: jurusan,
     angkatan: angkatan,
   };
-  console.log(data)
   // Check if data is exists
   return await kelas
     .findOne({ where: { id_kelas: idKelas } })

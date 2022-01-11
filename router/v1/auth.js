@@ -1,15 +1,12 @@
 const express = require("express");
 const models = require("../../data/models/index");
-const md5 = require("md5");
+const { passDecrypt } = require("../../domain/utils");
+const { secretKey } = require("../../domain/const");
 const jwt = require("jsonwebtoken");
 
 const app = express();
 const petugas = models.petugas;
 const siswa = models.siswa;
-const secretKey = {
-  petugas: "petugasSPP",
-  siswa: "siswaSPP",
-};
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,9 +15,9 @@ app.post("/", async (req, res) => {
   if (req.body.username) {
     await petugas
       .findOne({ where: { username: req.body.username } })
-      .then((found) => {
+      .then(async (found) => {
         if (found) {
-          if (found.password == md5(req.body.password)) {
+          if (await passDecrypt(username, password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",
@@ -72,9 +69,9 @@ app.post("/", async (req, res) => {
       .findOne({
         where: { nisn: req.body.nisn },
       })
-      .then((found) => {
+      .then(async (found) => {
         if (found) {
-          if (found.password == md5(req.body.password)) {
+          if (await passDecrypt(username, password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",

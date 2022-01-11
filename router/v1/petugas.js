@@ -2,13 +2,13 @@ const express = require("express");
 const sequelize = require("sequelize");
 const md5 = require("md5");
 const models = require("../../data/models/index");
-const { auth_verify, access_roles } = require("./verify");
+const { authVerify, accessLimit } = require("../../domain/utils");
 const app = express();
 
 const Op = sequelize.Op;
 const petugas = models.petugas;
 
-app.use(auth_verify);
+app.use(authVerify);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -65,7 +65,7 @@ app.get("/", async (req, res) => {
     });
 });
 
-app.post("/", access_roles(["admin"]), async (req, res) => {
+app.post("/", accessLimit(["admin"]), async (req, res) => {
   if (
     req.body.username &&
     req.body.password &&
@@ -119,7 +119,7 @@ app.post("/", access_roles(["admin"]), async (req, res) => {
   }
 });
 
-app.put("/", access_roles(["admin"]), async (req, res) => {
+app.put("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.id_petugas) {
     let data = {};
 
@@ -206,7 +206,7 @@ app.put("/", access_roles(["admin"]), async (req, res) => {
   }
 });
 
-app.delete("/", access_roles(["admin"]), async (req, res) => {
+app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_petugas) {
     await petugas
       .findOne({ where: { id_petugas: req.query.id_petugas } })
