@@ -98,7 +98,7 @@ app.post("/", async (req, res) => {
           } else {
             res.status(401).json({
               status: res.statusCode,
-              message: "Wrong Username or Password combination",
+              message: "Wrong Nisn or Password combination",
               details: {
                 logged: false,
                 token: null,
@@ -108,7 +108,7 @@ app.post("/", async (req, res) => {
         } else {
           res.status(401).json({
             status: res.statusCode,
-            message: "Wrong Username or Password combination",
+            message: "Wrong Nisn or Password combination",
             details: {
               logged: false,
               token: null,

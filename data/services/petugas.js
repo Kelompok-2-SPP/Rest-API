@@ -7,6 +7,24 @@ const Op = sequelize.Op;
 const petugas = models.petugas;
 
 async function getPetugas(keyword, size, page) {
+  // Initiate like opertaor
+  const data =
+    keyword == null
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              username: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              nama_petugas: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              level: { [Op.like]: `%${keyword}%` },
+            },
+          ],
+        };
+
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
   pageAsNum = Number.parseInt(page);
@@ -20,23 +38,9 @@ async function getPetugas(keyword, size, page) {
   if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
     sized = sizeAsNum;
   }
-  // Initiate like opertaor
-  const data = {
-    [Op.or]: [
-      {
-        username: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        nama_petugas: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        level: { [Op.like]: `%${keyword}%` },
-      },
-    ],
-  };
 
   // Return with findandcountall
-  await petugas
+  return await petugas
     .findAndCountAll({
       limit: sized,
       offset: paged * sized,
@@ -44,38 +48,52 @@ async function getPetugas(keyword, size, page) {
       attributes: { exclude: ["password"] },
       order: [["nama_petugas", "ASC"]],
     })
-    .then((lng) => {
-      if (lng.count > 0) {
+    .then((data) => {
+      if (data.count > 0) {
         return new Paged(
-          (content = lng.rows),
-          (totalPages = Math.ceil(lng.count / size))
+          (count = data.count),
+          (content = data.rows),
+          (totalPages = Math.ceil(data.count / size))
         );
       } else {
         return errorHandling.NOT_FOUND;
       }
+    })
+    .catch((error) => {
+      throw error;
     });
 }
 
-async function getAllPetugasByUsername(username) {
+async function getPetugasByUsername(username) {
   // Return with findall
-  return await petugas.findAll({ where: { username: username } }).then((data) => {
-    if (data) {
-      resolve(data);
-    } else {
-      resolve(errorHandling.NOT_FOUND);
-    }
-  });
+  return await petugas
+    .findOne({ where: { username: username } })
+    .then((data) => {
+      if (data) {
+        return data;
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function getPetugasbyId(idPetugas) {
   // Return with findone
-  await petugas.findOne({ where: { id_petugas: idPetugas } }).then((lng) => {
-    if (lng.count > 0) {
-      return lng;
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+  return await petugas
+    .findOne({ where: { id_petugas: idPetugas } })
+    .then((data) => {
+      if (data) {
+        return data;
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function insPetugas(username, namaPetugas, password, level) {
@@ -87,17 +105,22 @@ async function insPetugas(username, namaPetugas, password, level) {
   };
 
   // Check if has duplicate, becasue username is Uniqe key
-  await petugas
+  return await petugas
     .findOne({
       where: { username: data.username },
     })
-    .then((duplicate) => {
+    .then(async (duplicate) => {
       // Create new data
       if (!duplicate) {
-        return petugas.create(data);
+        await petugas.create(data).catch((error) => {
+          throw error;
+        });
       } else {
         return errorHandling.DOUBLE_DATA;
       }
+    })
+    .catch((error) => {
+      throw error;
     });
 }
 
@@ -110,46 +133,66 @@ async function putPetugas(idPetugas, username, namaPetugas, password, level) {
   };
 
   // Check if data is exists
-  await petugas.findOne({ where: { id_petugas: idPetugas } }).then((found) => {
-    if (found) {
-      // Check if has duplicate username, because username is Uniqe key
-      petugas
-        .findOne({ where: { username: data.username } })
-        .then((duplicate) => {
-          if (!duplicate) {
-            // Update petugas
-            petugas
-              .update(data, { where: { id_petugas: idPetugas } })
-              .then(() => {
-                return kelas.findOne({ where: { id_petugas: idPetugas } });
-              });
-          } else {
-            return errorHandling.DOUBLE_DATA;
-          }
-        });
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+  return await petugas
+    .findOne({ where: { id_petugas: idPetugas } })
+    .then(async (found) => {
+      if (found) {
+        // Check if has duplicate username, because username is Uniqe key
+        await petugas
+          .findOne({ where: { username: data.username } })
+          .then(async (duplicate) => {
+            if (!duplicate) {
+              // Update petugas
+              await petugas
+                .update(data, { where: { id_petugas: idPetugas } })
+                .then(async (succces) => {
+                  if (succces[0]) {
+                    await petugas
+                      .findOne({ where: { id_Petugas: idPetugas } })
+                      .catch((error) => {
+                        throw error;
+                      });
+                  }
+                });
+            } else {
+              return errorHandling.DOUBLE_DATA;
+            }
+          });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function delPetugas(idPetugas) {
   // Get data before it's get deleted
-  await petugas.findOne({ where: { id_petugas: idPetugas } }).then((data) => {
-    if (data) {
-      petugas.destroy({ where: { id_petugas: idPetugas } }).then(() => {
-        return data;
-      });
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+  return await petugas
+    .findOne({ where: { id_petugas: idPetugas } })
+    .then(async (data) => {
+      if (data) {
+        await petugas
+          .destroy({ where: { id_petugas: idPetugas } })
+          .then((success) => {
+            if (success[0]) {
+              return data;
+            }
+          });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 module.exports = {
   getPetugas,
   getPetugasbyId,
-  getAllPetugasByUsername,
+  getPetugasByUsername,
   insPetugas,
   putPetugas,
   delPetugas,

@@ -1,223 +1,202 @@
 const express = require("express");
-const sequelize = require("sequelize");
-const models = require("../models/index");
-const verify = require("./verify");
+const services = require("../../data/services");
+const {
+  FixedResponse,
+  authVerify,
+  accessLimit,
+  checkNull,
+} = require("../../domain/utils");
+const { errorHandling } = require("../../data/const");
+
 const app = express();
+const pembayaran = services.pembayaran;
 
-const Op = sequelize.Op;
-const pembayaran = models.pembayaran;
-const siswa = models.siswa;
-const petugas = models.petugas;
-const spp = models.spp;
-
-app.use(verify);
+app.use(authVerify);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// -- GET
 app.get("/", async (req, res) => {
-  let data = {};
+  // Fetch data from query params
+  const { id_pembayaran, keyword, size, page } = req.query;
 
-  if (req.query.keyword) {
-    data = {
-      [Op.or]: [
-        {
-          tgl_dibayar: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          bulan_dibayar: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          tahun_dibayar: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          jumlah_bayar: { [Op.like]: `%${req.query.keyword}%` },
-        },
-      ],
-    };
-  } else {
-    for (key in req.query) {
-      data[key] = req.query[key];
-    }
-  }
-
-  await pembayaran
-    .findAll({
-      where: data,
-      include: [
-        "petugas",
-        {
-          model: petugas,
-          as: "petugas",
-          attributes: { exclude: ["password"] },
-        },
-        "siswa",
-        {
-          model: siswa,
-          as: "siswa",
-          attributes: { exclude: ["password"] },
-        },
-        "spp",
-        {
-          model: spp,
-          as: "spp",
-        },
-      ],
-      order: [["createdAt", "ASC"]],
-    })
-    .then((pembayaran) => {
-      if (pembayaran.length > 0) {
-        res.status(200).json({
-          status: res.statusCode,
-          message: "",
-          details: pembayaran,
-        });
-      } else {
-        res.status(404).json({
-          status: res.statusCode,
-          message: "Data were not found",
-          details: pembayaran,
-        });
-      }
-    })
-    .catch((error) => {
-      res.status(500).json({
-        status: res.statusCode,
-        message: "Something went wrong on server side",
-        details: error.message,
-      });
-    });
-});
-
-app.post("/", access_roles(["petugas", "admin"]), async (req, res) => {
-  if (
-    req.body.id_petugas &&
-    req.body.nisn &&
-    req.body.tgl_dibayar &&
-    req.body.bulan_dibayar &&
-    req.body.tahun_dibayar &&
-    req.body.id_spp &&
-    req.body.jumlah_bayar
-  ) {
-    let data = ({ id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar } = req.body);
+  // Check if have id_pembayaran param
+  if (!id_pembayaran) {
+    // Call services getPembayaranbyId
     await pembayaran
-      .create(data)
-      .then((result) => {
-        res.status(201).json({
-          status: res.statusCode,
-          message: "Data has been inserted",
-          details: result,
-        });
-      })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
-      });
-  } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required body is missing !",
-      details: "Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
-    });
-  }
-});
-
-app.put("/", access_roles(["petugas", "admin"]), async (req, res) => {
-  if (req.body.id_pembayaran) {
-    let data = {};
-    for (key in req.body) {
-      data[key] = req.body[key];
-    }
-    await pembayaran
-      .update(data, { where: { id_pembayaran: data.id_pembayaran } })
-      .then((scss) => {
-        if (scss[0]) {
-          pembayaran
-            .findOne({ where: { id_pembayaran: data.id_pembayaran } })
-            .then((resu) => {
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully updated",
-                details: resu,
-              });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
+      .getPembayaranbyId(id_pembayaran)
+      .then((data) => {
+        // Check data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404), json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
         } else {
-          res.status(404).json({
-            status: res.statusCode,
-            message: "Data were not found",
-            details: null,
-          });
+          res
+            .status(200)
+            .json(new FixedResponse((code = res.statusCode), (details = data)));
+        }
+        // Throw if have server error
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse((code = res), (message = err)));
+      });
+  } else {
+    // Call services getPembayaran
+    await pembayaran
+      .getPembayaran(((keyword = keyword), (size = size), (page = page)))
+      .then((data) => {
+        // Check data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404), json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else {
+          res
+            .status(200)
+            .json(new FixedResponse((code = res.statusCode), (details = data)));
+        }
+        // Throw if have server error
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse((code = res), (message = err)));
+      });
+  }
+});
+
+// -- POST
+app.post("/", accessLimit(["admin"]), async (req, res) => {
+  // Fetch data from body
+  const { idPetugas, nisn, tglDibayar, bulanDibayar, tahunDibayar, idSpp, jumlahBayar } = req.body;
+
+  // Check if have required body
+  if (!idPetugas && !nisn && !tglDibayar && !bulanDibayar && !tahunDibayar && !idSpp && !jumlahBayar) {
+    // Call services insertPembayaran
+    await pembayaran
+      .insPembayaran(idPetugas, nisn, tglDibayar, bulanDibayar, tahunDibayar, idSpp, jumlahBayar)
+      .then((data) => {
+        // Check if double data or not
+        if (data == errorHandling.DOUBLE_DATA) {
+          res.status(409),
+            json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message =
+                  nama_pembayaran + " has been used, try different nama_pembayaran")
+              )
+            );
+          // Return data to user
+        } else {
+          res
+            .status(201)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = "Data sucessfully inserted"),
+                (details = data)
+              )
+            );
+        }
+        // Throw if have server error
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse((code = res), (message = err)));
+      });
+  } else {
+    // Throw error to user
+    res
+      .status(422)
+      .json(
+        new FixedResponse(
+          (code = res.statusCode),
+          (message =
+            "Required body is missing !, " +
+            await checkNull([nama_pembayaran, jurusan, angkatan]))
+        )
+      );
+  }
+});
+
+app.put("/", accessLimit(["admin"]), async (req, res) => {
+  // Fetch data from body
+  const { id_pembayaran, nama_pembayaran, jurusan, angkatan } = req.body;
+
+  // Check if have required body
+  if (!id_pembayaran) {
+    // Call services putPembayaran
+    await pembayaran
+      .putPembayaran(id_pembayaran, nama_pembayaran, jurusan, angkatan)
+      .then((data) => {
+        // Check if double data or not
+        if (data == errorHandling.DOUBLE_DATA) {
+          res.status(409),
+            json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message =
+                  nama_pembayaran + " has been used, try different nama_pembayaran")
+              )
+            );
+          // Check if data not found
+        } else if (data == errorHandling.NOT_FOUND) {
+          res.status(404), json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else {
+          res
+            .status(200)
+            .json(new FixedResponse((code = res.statusCode), (details = data)));
+        }
+        // Throw if have server error
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse((code = res), (message = err)));
+      });
+  } else {
+    // Throw error to user
+    res
+      .status(422)
+      .json(
+        new FixedResponse(
+          (code = res.statusCode),
+          (message =
+            "Required body is missing !, " +
+            await checkNull([id_pembayaran, nama_pembayaran, jurusan, angkatan]))
+        )
+      );
+  }
+});
+
+app.delete("/", accessLimit(["admin"]), async (req, res) => {
+  // Ftech data from query
+  const { id_pembayaran } = req.query;
+
+  // Check if have required query
+  if (!id_pembayaran) {
+    // Call services delPembayaran
+    await pembayaran
+      .delPembayaran(id_pembayaran)
+      .then((data) => {
+        // Check if data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404), json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else {
+          res
+            .status(200)
+            .json(new FixedResponse((code = res.statusCode), (details = data)));
         }
       })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
+      .catch((err) => {
+        res.status(500).json(new FixedResponse((code = res), (message = err)));
       });
   } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
-    });
-  }
-});
-
-app.delete("/", access_roles(["admin"]), async (req, res) => {
-  if (req.query.id_pembayaran) {
-    await pembayaran
-      .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })
-      .then((resu) => {
-        if (resu) {
-          pembayaran
-            .destroy({ where: { id_pembayaran: req.query.id_pembayaran } })
-            .then(
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully deleted",
-                data: resu,
-              })
-            )
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
-        } else {
-          res.status(404).json({
-            status: res.statusCode,
-            message: "Data were not found",
-            details: null,
-          });
-        }
-      })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
-      });
-  } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required params is missing !",
-      details: "Needed params is id_pembayaran",
-    });
+    // Throw error to user
+    res
+      .status(422)
+      .json(
+        new FixedResponse(
+          (code = res.statusCode),
+          (message = "Required query is missing !, id_pembayaran")
+        )
+      );
   }
 });
 

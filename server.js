@@ -1,35 +1,25 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const port = process.env.REQ_PORT || 8000;
+const port = process.env.PORT || 8000;
 
 app.use(cors());
 
 // API V.1.0
-const authV1 = require("./router/v1/auth");
-const sppV1 = require("./router/v1/spp");
-const siswaV1 = require("./router/v1/siswa");
-const kelasV1 = require("./router/v1/kelas");
-const petugasV1 = require("./router/v1/petugas");
-const pembayaranV1 = require("./router/v1/pembayaran");
+// const routerv1 = require("./router/v1")
 
-app.use("/api/v1/auth", authV1);
-app.use("/api/v1/spp", sppV1);
-app.use("/api/v1/siswa", siswaV1);
-app.use("/api/v1/kelas", kelasV1);
-app.use("/api/v1/petugas", petugasV1);
-app.use("/api/v1/pembayaran", pembayaranV1);
+// app.use("/api/v1/auth", routerv1.auth);
+// app.use("/api/v1/spp", routerv1.spp);
+// app.use("/api/v1/siswa", routerv1.siswa);
+// app.use("/api/v1/kelas", routerv1.kelas);
+// app.use("/api/v1/petugas", routerv1.petugas);
+// app.use("/api/v1/pembayaran", routerv1.pembayaran);
 
 // API V.2.0
-// const authV2 = require("./router/v2/auth");
-// const sppV2 = require("./router/v2/spp");
-// const siswaV2 = require("./router/v2/siswa");
-// const kelasV2 = require("./router/v2/kelas");
-// const petugasV2 = require("./router/v2/petugas");
-// const pembayaranV2 = require("./router/v2/pembayaran");
+// const routerV2 = require("./router/v2");
 
-// app.use("/api/v2/auth", authV2);
-// app.use("/api/v2/spp", sppV2);
+app.use("/api/v2/auth", require("./router/v2/auth"));
+app.use("/api/v2/kelas", require("./router/v2/kelas"));
 // app.use("/api/v2/siswa", siswaV2);
 // app.use("/api/v2/kelas", kelasV2);
 // app.use("/api/v2/petugas", petugasV2);

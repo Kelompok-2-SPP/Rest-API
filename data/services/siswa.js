@@ -7,6 +7,30 @@ const Op = sequelize.Op;
 const siswa = models.siswa;
 
 async function getSiswa(keyword, size, page) {
+  // Initiate like opertaor
+  const data =
+    keyword == null
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              nisn: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              nis: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              nama: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              alamat: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              no_telp: { [Op.like]: `%${keyword}%` },
+            },
+          ],
+        };
+
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
   pageAsNum = Number.parseInt(page);
@@ -20,29 +44,9 @@ async function getSiswa(keyword, size, page) {
   if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
     sized = sizeAsNum;
   }
-  // Initiate like opertaor
-  const data = {
-    [Op.or]: [
-      {
-        nisn: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        nis: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        nama: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        alamat: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        no_telp: { [Op.like]: `%${keyword}%` },
-      },
-    ],
-  };
 
   // Return with findandcountall
-  await siswa
+  return await siswa
     .findAndCountAll({
       limit: sized,
       offset: paged * sized,
@@ -50,38 +54,36 @@ async function getSiswa(keyword, size, page) {
       attributes: { exclude: ["password"] },
       order: [["nama", "ASC"]],
     })
-    .then((lng) => {
-      if (lng.count > 0) {
+    .then(async (data) => {
+      if (data.count > 0) {
         return new Paged(
-          (content = lng.rows),
-          (totalPages = Math.ceil(lng.count / size))
+          (count = data.count),
+          (content = data.rows),
+          (totalPages = Math.ceil(data.count / size))
         );
       } else {
         return errorHandling.NOT_FOUND;
       }
+    })
+    .catch((error) => {
+      throw error;
     });
 }
 
-async function getAllSiswaById(username) {
-    // Return with findall
-    await petugas.findAll({ where: { username: username } }).then((data) => {
-      if (data.length > 0) {
+async function getSiswabyId(nisn) {
+  // Return with findone
+  return await siswa
+    .findOne({ where: { nisn: nisn } })
+    .then((data) => {
+      if (data) {
         return data;
       } else {
         return errorHandling.NOT_FOUND;
       }
+    })
+    .catch((error) => {
+      throw error;
     });
-  }
-
-async function getSiswabyId(nisn) {
-  // Return with findone
-  await siswa.findOne({ where: { nisn: nisn } }).then((lng) => {
-    if (lng.length > 0) {
-      return lng;
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
 }
 
 async function insSiswa(nisn, password, nis, nama, idKelas, alamat, noTelp) {
@@ -92,21 +94,26 @@ async function insSiswa(nisn, password, nis, nama, idKelas, alamat, noTelp) {
     nama: nama,
     id_kelas: idKelas,
     alamat: alamat,
-    no_telp: noTelp,
+    no_telp: parseInt(noTelp),
   };
 
   // Check if has duplicate, becasue nisn is Primary key and also nis is Uniqe key
-  await siswa
+  return await siswa
     .findOne({
       where: { nisn: data.nisn, nis: data.nis },
     })
-    .then((duplicate) => {
+    .then(async (duplicate) => {
       // Create new data
       if (!duplicate) {
-        return siswa.create(data);
+        return await siswa.create(data).catch((error) => {
+          throw error;
+        });
       } else {
         return errorHandling.DOUBLE_DATA;
       }
+    })
+    .catch((error) => {
+      throw error;
     });
 }
 
@@ -122,7 +129,10 @@ async function putSiswa(
 ) {
   const data = {
     nisn: newNisn,
-    password: await passEncrypt(nisn, password),
+    password:
+      newNisn == null
+        ? await passEncrypt(nisn, password)
+        : await passEncrypt(newNisn, password),
     nis: nis,
     nama: nama,
     id_kelas: idKelas,
@@ -130,42 +140,76 @@ async function putSiswa(
     no_telp: noTelp,
   };
   // Check if data is exists
-  await siswa.findOne({ where: { nisn: nisn } }).then((found) => {
-    if (found) {
-      // Check if has duplicate, becasue nisn is Primary key and also nis is Uniqe key
-      siswa.findOne({ where: { nisn: data.nisn, nis: data.nis } }).then((duplicate) => {
-        if (!duplicate) {
-          // Update siswa
-          siswa.update(data, { where: { nisn: nisn } }).then(() => {
-            return siswa.findOne({ where: { nisn: data.nisn } });
+  return await siswa
+    .findOne({ where: { nisn: nisn } })
+    .then(async (found) => {
+      if (found) {
+        // Check if has duplicate, becasue nisn is Primary key and also nis is Uniqe key
+        await siswa
+          .findOne({ where: { nisn: data.nisn, nis: data.nis } })
+          .then(async (duplicate) => {
+            if (!duplicate) {
+              // Update siswa
+              await siswa
+                .update(data, { where: { nisn: nisn } })
+                .then(async (succces) => {
+                  if (succces[0]) {
+                    return await siswa
+                      .findOne({ wher: { nis: data.nisn } })
+                      .catch((error) => {
+                        throw error;
+                      });
+                  } else {
+                    return errorHandling.FAILED;
+                  }
+                })
+                .catch((error) => {
+                  throw error;
+                });
+            } else {
+              return errorHandling.DOUBLE_DATA;
+            }
+          })
+          .catch((error) => {
+            throw error;
           });
-        } else {
-          return errorHandling.DOUBLE_DATA;
-        }
-      });
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function delSiswa(nisn) {
   // Get data before it's get deleted
-  await siswa.findOne({ where: { nisn: nisn } }).then((data) => {
-    if (data) {
-      siswa.destroy({ where: { nisn: nisn } }).then(() => {
-        return data;
-      });
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+  return await siswa
+    .findOne({ where: { nisn: nisn } })
+    .then(async (data) => {
+      if (data) {
+        await siswa
+          .destroy({ where: { nisn: nisn } })
+          .then((success) => {
+            if (success[0]) {
+              return data;
+            }
+          })
+          .catch((error) => {
+            throw error;
+          });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 module.exports = {
   getSiswa,
   getSiswabyId,
-  getAllSiswaById,
   insSiswa,
   putSiswa,
   delSiswa,

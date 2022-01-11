@@ -7,6 +7,24 @@ const Op = sequelize.Op;
 const kelas = models.kelas;
 
 async function getKelas(keyword, size, page) {
+  // Initiate like opertaor
+  const data =
+    keyword == null
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              nama_kelas: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              jurusan: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              angkatan: { [Op.like]: `%${keyword}%` },
+            },
+          ],
+        };
+
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
   pageAsNum = Number.parseInt(page);
@@ -20,67 +38,41 @@ async function getKelas(keyword, size, page) {
   if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
     sized = sizeAsNum;
   }
-  // Initiate like opertaor
-  const data = {
-    [Op.or]: [
-      {
-        nama_kelas: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        jurusan: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        angkatan: { [Op.like]: `%${keyword}%` },
-      },
-    ],
-  };
 
   // Return with findandcountall
-  const promise = await new Promise((resolve, reject) => {
-    kelas
-      .findAndCountAll({
-        limit: sized,
-        offset: paged * sized,
-        where: data,
-        order: [["nama_kelas", "ASC"]],
-      })
-      .then((lng) => {
-        if (lng.count > 0) {
-          resolve(
-            new Paged(
-              (content = lng.rows),
-              (totalPages = Math.ceil(lng.count / size))
-            )
-          );
-        } else {
-          resolve(errorHandling.NOT_FOUND);
-        }
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-  return promise;
+  return await kelas
+    .findAndCountAll({
+      limit: sized,
+      offset: paged * sized,
+      where: data,
+      order: [["nama_kelas", "ASC"]],
+    })
+    .then((data) => {
+      if (data.count > 0) {
+        return new Paged(data.count, data.rows, Math.ceil(data.count / size));
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function getKelasbyId(idKelas) {
   // Return with findone
-  const promise = await new Promise((resolve, reject) => {
-    kelas
-      .findOne({ where: { id_kelas: idKelas } })
-      .then((lng) => {
-        if (lng) {
-          resolve(lng);
-        } else {
-          resolve(errorHandling.NOT_FOUND);
-        }
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-
-  return promise;
+  return await kelas
+    .findOne({ where: { id_kelas: idKelas } })
+    .then((data) => {
+      if (data) {
+        return data;
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function insKelas(namaKelas, jurusan, angkatan) {
@@ -91,24 +83,23 @@ async function insKelas(namaKelas, jurusan, angkatan) {
   };
 
   // Check if has duplicate, becasue nama_kelas is Uniqe key
-  const promise = await new Promise(resolve, (reject) => {
-    kelas
-      .findOne({
-        where: { nama_kelas: data.nama_kelas },
-      })
-      .then((duplicate) => {
-        // Create new data
-        if (!duplicate) {
-          resolve(kelas.create(data))
-        } else {
-          return errorHandling.DOUBLE_DATA;
-        }
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-  return promise;
+  return await kelas
+    .findOne({
+      where: { nama_kelas: data.nama_kelas },
+    })
+    .then(async (duplicate) => {
+      // Create new data
+      if (!duplicate) {
+        return await kelas.create(data).catch((error) => {
+          throw error;
+        });
+      } else {
+        return errorHandling.DOUBLE_DATA;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function putKelas(idKelas, namaKelas, jurusan, angkatan) {
@@ -117,43 +108,76 @@ async function putKelas(idKelas, namaKelas, jurusan, angkatan) {
     jurusan: jurusan,
     angkatan: angkatan,
   };
+  console.log(data)
   // Check if data is exists
-  const promise = await new Promise(resolve, reject => {
-    kelas.findOne({ where: { id_kelas: idKelas } }).then((found) => {
+  return await kelas
+    .findOne({ where: { id_kelas: idKelas } })
+    .then(async (found) => {
       if (found) {
         // Check if has duplicate nama_kelas, because nama_kelas is Uniqe key
-        kelas
+        await kelas
           .findOne({ where: { nama_kelas: data.nama_kelas } })
-          .then((duplicate) => {
+          .then(async (duplicate) => {
             if (!duplicate) {
               // Update kelas
-              kelas.update(data, { where: { id_kelas: idKelas } }).then(() => {
-                return kelas.findOne({ where: { id_kelas: idKelas } });
-              });
+              await kelas
+                .update(data, { where: { id_kelas: idKelas } })
+                .then(async (success) => {
+                  // Return class data
+                  if (success[0]) {
+                    return await kelas
+                      .findOne({ where: { id_kelas: idKelas } })
+                      .catch((error) => {
+                        throw error;
+                      });
+                  } else {
+                    return errorHandling.FAILED;
+                  }
+                })
+                .catch((error) => {
+                  throw error;
+                });
             } else {
               return errorHandling.DOUBLE_DATA;
             }
+          })
+          .catch((error) => {
+            throw error;
           });
       } else {
         return errorHandling.NOT_FOUND;
       }
-    }).catch(error => {
-      reject(error)
     })
-  })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function delKelas(idKelas) {
   // Get data before it's get deleted
-  await kelas.findOne({ where: { id_kelas: idKelas } }).then((data) => {
-    if (data) {
-      kelas.destroy({ where: { id_kelas: idKelas } }).then(() => {
-        return data;
-      });
-    } else {
-      return errorHandling.NOT_FOUND;
-    }
-  });
+  return await kelas
+    .findOne({ where: { id_kelas: idKelas } })
+    .then(async (data) => {
+      if (data) {
+        await kelas
+          .destroy({ where: { id_kelas: idKelas } })
+          .then((check) => {
+            if (check[0]) {
+              return data;
+            } else {
+              return errorHandling.FAILED;
+            }
+          })
+          .catch((error) => {
+            throw error;
+          });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 module.exports = {

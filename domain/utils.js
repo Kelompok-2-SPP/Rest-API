@@ -34,37 +34,62 @@ class FixedResponse {
 
 // Paged Response interface
 class Paged {
-  constructor(content = null, totalPages = 1) {
+  constructor(count = 0, content = null, totalPages = 0) {
+    this.count = count;
     this.content = content;
-    this.totalPages = totalPages;
+    this.totalPages = isNaN(totalPages) ? 1 : totalPages;
   }
 }
 
 // Check nuul
-checkNull = (data) => {
+checkNull = async (data) => {
   let nullData = "";
 
   // literate through data
-  for (a of data) {
-    if (a == null) {
-      nullData += Object.keys({ a })[0] + ", ";
+  for (const [keys, values] of Object.entries(data)) {
+    if (values == null) {
+      nullData += ", " + keys;
     }
   }
 
-  return (nullData += ".");
+  return nullData;
 };
 
 // Verify aaccount
-authVerify = (req, res, next) => {
+authVerify = async (req, res, next) => {
   const jwtHeader = {
     algorithm: "HS256",
   };
 
   // get header
   const header = req.headers.authorization;
+
   // check if token is null or not, if yes throw error to user
-  if (!header) {
+  if (header != null) {
     token = header.split(" ")[1];
+
+    jwt.verify(token, secretKey.petugas, jwtHeader, (err) => {
+      if (err) {
+        jwt.verify(token, secretKey.siswa, jwtHeader, (err) => {
+          if (err) {
+            res.status(401).json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = "Token invalid"),
+                (details = {
+                  logged: false,
+                  token: token,
+                })
+              )
+            );
+          } else {
+            next();
+          }
+        });
+      } else {
+        next();
+      }
+    });
   } else {
     res.status(401).json(
       new FixedResponse(
@@ -77,29 +102,6 @@ authVerify = (req, res, next) => {
       )
     );
   }
-
-  jwt.verify(token, secretKey.petugas, jwtHeader, (err) => {
-    if (err) {
-      jwt.verify(token, secretKey.siswa, jwtHeader, (err) => {
-        if (err) {
-          res.status(401).json(
-            new FixedResponse(
-              (code = res.statusCode),
-              (message = "Token invalid"),
-              (details = {
-                logged: false,
-                token: token,
-              })
-            )
-          );
-        } else {
-          next();
-        }
-      });
-    } else {
-      next();
-    }
-  });
 };
 
 // Roles access
@@ -110,7 +112,7 @@ accessLimit = (roles) => {
 
     // check role
     for (x of roles) {
-      if (x == dcdToken.level) {
+      if (x == dcdToken.payload.level) {
         allowed = true;
       }
     }
@@ -141,16 +143,25 @@ passEncrypt = async (username, password) => {
   }
 
   // Begin encryption using bcrypt
-  return await bcrypt.hash(pas, saltRound)
+  return await bcrypt.hash(pas, saltRound);
 };
 
-passDecrypt = async (plain, hashed) => {
-  return await bcrypt.compare(plain, hashed)
+passDecrypt = async (username, password, hashed) => {
+  let pas = "";
+
+  if (!Number.isNaN(username)) {
+    pas = username + password + secretKey.siswa;
+  } else {
+    pas = username + password + secretKey.petugas;
+  }
+
+  return await bcrypt.compare(pas, hashed);
 };
 
 module.exports = {
   Paged,
   passEncrypt,
+  passDecrypt,
   authVerify,
   FixedResponse,
   accessLimit,

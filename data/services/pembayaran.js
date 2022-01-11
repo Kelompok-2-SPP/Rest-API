@@ -7,6 +7,27 @@ const Op = sequelize.Op;
 const pembayaran = models.pembayaran;
 
 async function getPembayaran(keyword, size, page) {
+  // Initiate like opertaor
+  const data =
+    keyword == null
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              tgl_dibayar: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              bulan_dibayar: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              tahun_dibayar: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              jumlah_bayar: { [Op.like]: `%${keyword}%` },
+            },
+          ],
+        };
+
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
   pageAsNum = Number.parseInt(page);
@@ -20,71 +41,65 @@ async function getPembayaran(keyword, size, page) {
   if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
     sized = sizeAsNum;
   }
-  // Initiate like opertaor
-  const data = {
-    [Op.or]: [
-      {
-        tgl_dibayar: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        bulan_dibayar: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        tahun_dibayar: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        jumlah_bayar: { [Op.like]: `%${keyword}%` },
-      },
-    ],
-  };
 
   // Return with findandcountall
-  const lng = await pembayaran.findAndCountAll({
-    limit: sized,
-    offset: paged * sized,
-    where: data,
-    attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-    include: [
-      "petugas",
-      {
-        model: petugas,
-        as: "petugas",
-        attributes: { exclude: ["password"] },
-      },
-      "siswa",
-      {
-        model: siswa,
-        as: "siswa",
-        attributes: { exclude: ["password"] },
-      },
-      "spp",
-      {
-        model: spp,
-        as: "spp",
-      },
-    ],
-    order: [["createdAt", "ASC"]],
-  });
-  if (lng.count > 0) {
-    return new Paged(
-      (content = lng.rows),
-      (totalPages = Math.ceil(lng.count / size))
-    );
-  } else {
-    return errorHandling.NOT_FOUND;
-  }
+  return await pembayaran
+    .findAndCountAll({
+      limit: sized,
+      offset: paged * sized,
+      where: data,
+      attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+      include: [
+        "petugas",
+        {
+          model: petugas,
+          as: "petugas",
+          attributes: { exclude: ["password"] },
+        },
+        "siswa",
+        {
+          model: siswa,
+          as: "siswa",
+          attributes: { exclude: ["password"] },
+        },
+        "spp",
+        {
+          model: spp,
+          as: "spp",
+        },
+      ],
+      order: [["createdAt", "ASC"]],
+    })
+    .then((data) => {
+      if (data.count > 0) {
+        return new Paged(
+          (count = data.count),
+          (content = data.rows),
+          (totalPages = Math.ceil(data.count / size))
+        );
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function getPembayaranbyId(idPembayaran) {
   // Return with findone
-  const lng = await pembayaran.findOne({
-    where: { id_pembayaran: idPembayaran },
-  });
-  if (lng) {
-    return lng;
-  } else {
-    return errorHandling.NOT_FOUND;
-  }
+  return await pembayaran
+    .findOne({ where: { id_pembayaran: idPembayaran } })
+    .then((data) => {
+      if (data) {
+        return data;
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
 async function insPembayaran(
@@ -106,7 +121,9 @@ async function insPembayaran(
     jumlah_bayar: jumlahBayar,
   };
 
-  return await pembayaran.create(data);
+  return await pembayaran.create(data).catch((error) => {
+    throw error;
+  });
 }
 
 async function putPembayaran(
@@ -130,34 +147,62 @@ async function putPembayaran(
   };
 
   // Check if data is exists
-  const found = await pembayaran.findOne({
-    where: { id_pembayaran: idPembayaran },
-  });
-  if (found) {
-    // Update pembayaran
-    const update = await pembayaran.update(data, { where: { id_pembayaran: idPembayaran } })
-        return pembayaran.findOne({
-          where: { id_pembayaran: idPembayaran },
-        });
-  } else {
-    return errorHandling.NOT_FOUND;
-  }
-}
-
-async function delPembayaran(idPembayaran) {
-  // Get data before it's get deleted
-  await pembayaran
+  return await pembayaran
     .findOne({ where: { id_pembayaran: idPembayaran } })
-    .then((data) => {
-      if (data) {
-        pembayaran
-          .destroy({ where: { id_pembayaran: idPembayaran } })
-          .then(() => {
-            return data;
+    .then(async (found) => {
+      if (found) {
+        // Update pembayaran
+        await pembayaran
+          .update(data, { where: { id_pembayaran: idPembayaran } })
+          .then(async (success) => {
+            if (success[0]) {
+              return await pembayaran
+                .findOne({
+                  where: { id_pembayaran: idPembayaran },
+                })
+                .catch((error) => {
+                  throw error;
+                });
+            } else {
+              return errorHandling.FAILED;
+            }
+          })
+          .catch((error) => {
+            throw error;
           });
       } else {
         return errorHandling.NOT_FOUND;
       }
+    })
+    .catch((error) => {
+      throw error;
+    });
+}
+
+async function delPembayaran(idPembayaran) {
+  // Get data before it's get deleted
+  return await pembayaran
+    .findOne({ where: { id_pembayaran: idPembayaran } })
+    .then(async (data) => {
+      if (data) {
+        await pembayaran
+          .destroy({ where: { id_pembayaran: idPembayaran } })
+          .then((success) => {
+            if (success[0]) {
+              return data;
+            } else {
+              return errorHandling.FAILED;
+            }
+          })
+          .catch((error) => {
+            throw error;
+          });
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
     });
 }
 
