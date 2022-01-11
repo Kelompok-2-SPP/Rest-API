@@ -65,8 +65,8 @@ app.get("/", async (req, res) => {
     .catch((error) => {
       res.status(500).json({
         status: res.statusCode,
-        message: "Something went wrong on server side",
-        details: error.message,
+        message: "Something went wrong on server side, " + error.message,
+        details: null,
       });
     });
 });
@@ -82,9 +82,20 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
     req.body.no_telp
   ) {
     let data = ({ nisn, nis, nama, id_kelas, alamat, no_telp } = req.body);
-    data["password"] = md5(req.body.password);
+    data["password"] = await passEncrypt(data.nisn, data.password);
     await siswa
-      .findOne({ where: { nisn: data.nisn, nis: data.nis } })
+      .findOne({
+        where: {
+          [Op.or]: [
+            {
+              nisn: data.nisn,
+            },
+            {
+              nis: data.nis,
+            },
+          ],
+        },
+      })
       .then((duplicate) => {
         if (!duplicate) {
           siswa
@@ -100,31 +111,32 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
         } else {
           res.status(409).json({
             status: res.statusCode,
-            message: "Nisn or Nis has been used",
-            details: "Try different nisn or nis",
+            message: "Nisn or Nis has been used, Try different nisn or nis",
+            details: null,
           });
         }
       })
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is nisn, password, nis, nama, id_kelas, alamat, no_telp, id_spp",
+      message:
+        "Required body is missing !, Needed body is nisn, password, nis, nama, id_kelas, alamat, no_telp",
+      details: null,
     });
   }
 });
@@ -138,16 +150,77 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     }
 
     if (req.body.new_nisn) {
-      delete data["new_nisn"];
       data["nisn"] = req.body.new_nisn;
+      delete data["new_nisn"];
+      await siswa
+        .findOne({
+          where: {
+            [Op.and]: [
+              {
+                nisn: data.nisn,
+              },
+              {
+                nisn: { [Op.ne]: req.body.nisn },
+              },
+            ],
+          },
+        })
+        .then((find) => {
+          if (find) {
+            res.status(409).json({
+              status: res.statusCode,
+              message: "Nisn has been used, Try different nisn",
+              details: null,
+            });
+          }
+        })
+        .catch((error) => {
+          res.status(500).json({
+            status: res.statusCode,
+            message: "Something went wrong on server side, " + error.message,
+            details: null,
+          });
+        });
+    }
+
+    if (req.body.nis) {
+      await siswa
+        .findOne({
+          where: {
+            [Op.and]: [
+              {
+                nis: data.nis,
+              },
+              {
+                nisn: { [Op.ne]: req.body.nisn },
+              },
+            ],
+          },
+        })
+        .then((find) => {
+          if (find) {
+            res.status(409).json({
+              status: res.statusCode,
+              message: "Nis has been used, Try different nis",
+              details: null,
+            });
+          }
+        })
+        .catch((error) => {
+          res.status(500).json({
+            status: res.statusCode,
+            message: "Something went wrong on server side, " + error.message,
+            details: null,
+          });
+        });
     }
 
     if (data.password) {
-      delete data["password"];
+      data["password"] = await passEncrypt(data.nisn, data.password);
     }
-
+    
     await siswa
-      .update(data, { where: { nisn: req.body.nisn } })
+      .update(data, { where: {nisn: req.body.nisn} })
       .then((scss) => {
         if (scss[0]) {
           siswa
@@ -163,7 +236,8 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -178,16 +252,16 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is nisn, and new_nisn or nis or nama or id_kelas or alamat or no_telp or id_spp",
+      message:
+        "Required body is missing !, Needed body is nisn, and new_nisn or nis or nama or id_kelas or alamat or no_telp",
+      details: null,
     });
   }
 });
@@ -211,7 +285,8 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -226,15 +301,15 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required params is missing !",
-      details: "Needed params is nisn",
+      message: "Required params is missing !, Needed params is nisn",
+      details: null,
     });
   }
 });

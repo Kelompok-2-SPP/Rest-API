@@ -75,15 +75,15 @@ app.get("/", async (req, res) => {
         res.status(404).json({
           status: res.statusCode,
           message: "Data were not found",
-          details: pembayaran,
+          details: null,
         });
       }
     })
     .catch((error) => {
       res.status(500).json({
         status: res.statusCode,
-        message: "Something went wrong on server side",
-        details: error.message,
+        message: "Something went wrong on server side, " + error.message,
+        details: null,
       });
     });
 });
@@ -119,16 +119,16 @@ app.post("/", accessLimit(["petugas", "admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
+      message:
+        "Required body is missing !, Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
+      details: null,
     });
   }
 });
@@ -155,7 +155,8 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -170,16 +171,16 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
+      message:
+        "Required body is missing !, Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
+      details: nulll,
     });
   }
 });
@@ -202,7 +203,8 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -217,15 +219,15 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required params is missing !",
-      details: "Needed params is id_pembayaran",
+      message: "Required params is missing !, Needed params is id_pembayaran",
+      details: null,
     });
   }
 });

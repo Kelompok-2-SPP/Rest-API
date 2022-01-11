@@ -17,7 +17,7 @@ app.post("/", async (req, res) => {
       .findOne({ where: { username: req.body.username } })
       .then(async (found) => {
         if (found) {
-          if (await passDecrypt(username, password, found.password)) {
+          if (await passDecrypt(req.body.username, req.body.password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",
@@ -58,9 +58,10 @@ app.post("/", async (req, res) => {
         }
       })
       .catch((error) => {
+        console.log(error)
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side" + error.message,
+          message: "Something went wrong on server side, " + error.message,
           details: null,
         });
       });
@@ -71,7 +72,7 @@ app.post("/", async (req, res) => {
       })
       .then(async (found) => {
         if (found) {
-          if (await passDecrypt(username, password, found.password)) {
+          if (await passDecrypt(req.body.nisn, req.body.password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",
@@ -116,14 +117,14 @@ app.post("/", async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side" + error.message,
+          message: "Something went wrong on server side, " + error.message,
           details: null,
         });
       });
   } else {
     res.status(500).json({
       status: res.statusCode,
-      message: "Something went wrong on server side" + error.message,
+      message: "Something went wrong on server side, " + error.message,
       details: null,
     });
   }

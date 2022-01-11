@@ -2,7 +2,7 @@ const express = require("express");
 const sequelize = require("sequelize");
 const md5 = require("md5");
 const models = require("../../data/models/index");
-const { authVerify, accessLimit } = require("../../domain/utils");
+const { authVerify, accessLimit, passEncrypt } = require("../../domain/utils");
 const app = express();
 
 const Op = sequelize.Op;
@@ -59,8 +59,8 @@ app.get("/", async (req, res) => {
     .catch((error) => {
       res.status(500).json({
         status: res.statusCode,
-        message: "Something went wrong on server side",
-        details: error.message,
+        message: "Something went wrong on server side, " + error.message,
+        details: null,
       });
     });
 });
@@ -69,11 +69,10 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
   if (
     req.body.username &&
     req.body.password &&
-    req.body.nama_petugas &&
-    req.body.level
+    req.body.nama_petugas
   ) {
     let data = ({ username, nama_petugas, level } = req.body);
-    data["password"] = md5(req.body.password);
+    data["password"] = await passEncrypt(data.username, data.password);
     await petugas
       .findOne({ where: { username: data.username } })
       .then((duplicate) => {
@@ -91,30 +90,32 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
         } else {
           res.status(409).json({
             status: res.statusCode,
-            message: "Username has been used",
-            details: "Try different username",
+            message: "Username has been used, Try different username",
+            details: null,
           });
         }
       })
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details: "Needed body is username, password, nama_petugas, level",
+      message:
+        "Required body is missing !, Needed body is username, password, nama_petugas, level (optional)",
+      details: null,
     });
   }
 });
@@ -128,7 +129,26 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     }
 
     if (data.password) {
-      delete data["password"];
+      await petugas
+        .findOne({ where: { id_petugas: data.id_petugas } })
+        .then(async(user) => {
+          if (user) {
+            data["password"] = await passEncrypt(user.username, data.password);
+          } else {
+            res.status(404).json({
+              status: res.statusCode,
+              message: "Data were not found",
+              details: null,
+            });
+          }
+        })
+        .catch((error) => {
+          res.status(500).json({
+            status: res.statusCode,
+            message: "Something went wrong on server side, " + error.message,
+            details: null,
+          });
+        });
     }
 
     if (data.username) {
@@ -142,20 +162,19 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then((surname) => {
-          console.log(surname);
           if (surname) {
             res.status(409).json({
               status: res.statusCode,
-              message: "Username has been used",
-              details: "Try different username",
+              message: "Username has been used, Try different username",
+              details: null,
             });
           }
         })
         .catch((error) => {
           res.status(500).json({
             status: res.statusCode,
-            message: "Something went wrong on server side",
-            details: error.message,
+            message: "Something went wrong on server side, " + error.message,
+            details: null,
           });
         });
     }
@@ -177,7 +196,8 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -192,16 +212,16 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is id_petugas, and username or nama_petugas or level",
+      message:
+        "Required body is missing !, Needed body is id_petugas, and username or nama_petugas or level",
+      details: null,
     });
   }
 });
@@ -225,7 +245,8 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
             .catch((error) => {
               res.status(500).json({
                 status: res.statusCode,
-                message: "Something went wrong on server side" + error.message,
+                message:
+                  "Something went wrong on server side, " + error.message,
                 details: null,
               });
             });
@@ -240,15 +261,15 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .catch((error) => {
         res.status(500).json({
           status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
+          message: "Something went wrong on server side, " + error.message,
+          details: null,
         });
       });
   } else {
     res.status(422).json({
       status: res.statusCode,
-      message: "Required params is missing !",
-      details: "Needed params is id_petugas",
+      message: "Required params is missing !, Needed params is id_petugas",
+      details: null,
     });
   }
 });

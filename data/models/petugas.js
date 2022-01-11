@@ -29,7 +29,10 @@ module.exports = (sequelize, DataTypes) => {
       },
       password: DataTypes.STRING,
       nama_petugas: DataTypes.STRING,
-      level: DataTypes.ENUM("admin", "petugas"),
+      level: {
+        type: DataTypes.ENUM("admin", "petugas"),
+        defaultValue: "petugas"
+      },
     },
     {
       sequelize,
