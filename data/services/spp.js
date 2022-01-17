@@ -8,19 +8,22 @@ const spp = models.spp;
 
 async function getSpp(keyword, size, page) {
   // Initiate like opertaor
-  const data = keyword == undefined ? {}:{
-    [Op.or]: [
-      {
-        angkatan: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        tahun: { [Op.like]: `%${keyword}%` },
-      },
-      {
-        nominal: { [Op.like]: `%${keyword}%` },
-      },
-    ],
-  };
+  const data =
+    keyword == undefined
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              angkatan: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              tahun: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              nominal: { [Op.like]: `%${keyword}%` },
+            },
+          ],
+        };
 
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
@@ -35,7 +38,7 @@ async function getSpp(keyword, size, page) {
   if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
     sized = sizeAsNum;
   }
-  
+
   // Return with findandcountall
   return await spp
     .findAndCountAll({
@@ -61,95 +64,106 @@ async function getSpp(keyword, size, page) {
 }
 
 async function getSppbyId(idSpp) {
-  // Return with findone
-  return await spp
-    .findOne({ where: { id_spp: idSpp } })
-    .then((data) => {
-      if (data) {
-        return data;
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (!Number.isNaN(Number.parseInt(idSpp))) {
+    return await spp
+      .findByPk(idSpp)
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function insSpp(tahun, nominal, angkatan) {
-  const data = {
-    tahun: tahun,
-    nominal: nominal,
-    angkatan: angkatan,
-  };
+  if (
+    !Number.isNaN(Number.parseInt(tahun)) &&
+    !Number.isNaN(Number.parseInt(nominal)) &&
+    !Number.isNaN(Number.parseInt(angkatan))
+  ) {
+    const data = {
+      tahun: tahun,
+      nominal: nominal,
+      angkatan: angkatan,
+    };
 
-  return await spp
-    .create(data)
-    .then((data) => {
-      return data;
-    })
-    .catch((error) => {
-      throw error;
-    });
+    return await spp
+      .create(data)
+      .then((data) => {
+        return data;
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
-async function putSpp(idSpp, tahun, nominal, angkatan) {
-  const data = {
-    tahun: tahun,
-    nominal: nominal,
-    angkatan: angkatan,
-  };
+async function putSpp(idSpp, body) {
+  if (!Number.isNaN(Number.parseInt(idSpp))) {
+    let data = {};
 
-  // Check if data is exists
-  return await spp
-    .findOne({ where: { id_spp: idSpp } })
-    .then(async (found) => {
-      if (found) {
-        // Update spp
-        await spp
-          .update(data, { where: { id_spp: idSpp } })
-          .then(async (success) => {
-            if (success[0]) {
-              return await spp.findOne({ where: { id_spp: idSpp } });
+    const regex = new RegExp("tahun|nominal|angkatan");
+
+    for (key in body) {
+      if (regex.test(key) && Number.isNaN(Number.parseInt(body[key]))) {
+        return errorHandling.BAD_REQ;
+      }
+      data[key] = body[key];
+    }
+
+    return await spp
+      .update(data, { where: { id_spp: idSpp } })
+      .then(async () => {
+        return await spp
+          .findByPk(idSpp)
+          .then((find) => {
+            if (find) {
+              return find;
+            } else {
+              return errorHandling.NOT_FOUND;
             }
           })
-          .catch((error) => {
-            throw error;
+          .catch((err) => {
+            throw err;
           });
-      } else {
-        resolve(errorHandling.NOT_FOUND);
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+      })
+      .catch((err) => {
+        throw err;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function delSpp(idSpp) {
-  // Get data before it's get deleted
-  return await spp
-    .findOne({ where: { id_spp: idSpp } })
-    .then(async (data) => {
-      if (data) {
-        await spp
-          .destroy({ where: { id_spp: idSpp } })
-          .then((succces) => {
-            if (succces[0]) {
-              return data;
-            } else {
-              return errorHandling.FAILED;
-            }
-          })
-          .catch((error) => {
-            throw error;
+  if (!Number.isNaN(Number.parseInt(idSpp))) {
+    return await spp
+      .findByPk(idSpp)
+      .then(async (data) => {
+        if (data) {
+          await spp.destroy({ where: { id_spp: idSpp } }).catch((err) => {
+            throw err;
           });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((err) => {
+        throw err;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 module.exports = {

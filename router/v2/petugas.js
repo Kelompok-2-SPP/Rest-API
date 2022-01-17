@@ -1,255 +1,243 @@
 const express = require("express");
-const sequelize = require("sequelize");
-const md5 = require("md5");
-const models = require("../models/index");
-const verify = require("./verify");
+const services = require("../../data/services");
+const {
+  FixedResponse,
+  authVerify,
+  accessLimit,
+  checkNull,
+} = require("../../domain/utils");
+const { errorHandling } = require("../../domain/const");
+
 const app = express();
+const petugas = services.petugas;
 
-const Op = sequelize.Op;
-const petugas = models.petugas;
-
-app.use(verify);
+app.use(authVerify);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// -- GET
 app.get("/", async (req, res) => {
-  let data = {};
+  // Fetch data from query params
+  const { id_petugas, keyword, size, page } = req.query;
 
-  if (req.query.keyword) {
-    data = {
-      [Op.or]: [
-        {
-          username: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          nama_petugas: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          level: { [Op.like]: `%${req.query.keyword}%` },
-        },
-      ],
-    };
-  } else {
-    for (key in req.query) {
-      data[key] = req.query[key];
-    }
-  }
-
-  await petugas
-    .findAll({
-      where: data,
-      order: [["nama_petugas", "ASC"]],
-      attributes: { exclude: ["password"] },
-    })
-    .then((result) => {
-      if (result.length > 0) {
-        res.status(200).json({
-          status: res.statusCode,
-          message: "",
-          details: result,
-        });
-      } else {
-        res.status(404).json({
-          status: res.statusCode,
-          message: "Data were not found",
-          details: null,
-        });
-      }
-    })
-    .catch((error) => {
-      res.status(500).json({
-        status: res.statusCode,
-        message: "Something went wrong on server side",
-        details: error.message,
-      });
-    });
-});
-
-app.post("/", access_roles(["admin"]), async (req, res) => {
-  if (
-    req.body.username &&
-    req.body.password &&
-    req.body.nama_petugas &&
-    req.body.level
-  ) {
-    let data = ({ username, nama_petugas, level } = req.body);
-    data["password"] = md5(req.body.password);
+  // Check if have id_petugas param
+  if (id_petugas) {
+    // Call services getPetugasbyId
     await petugas
-      .findOne({ where: { username: data.username } })
-      .then((duplicate) => {
-        if (!duplicate) {
-          petugas
-            .create(data)
-            .then((result) => {
-              delete result.dataValues.password;
-              res.status(201).json({
-                status: res.statusCode,
-                message: "Data has been inserted",
-                details: result,
-              });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
+      .getPetugasbyId(id_petugas)
+      .then((data) => {
+        // Check data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
         } else {
-          res.status(409).json({
-            status: res.statusCode,
-            message: "Username has been used",
-            details: "Try different username",
-          });
+          res
+            .status(200)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = ""),
+                (details = data)
+              )
+            );
         }
+        // Throw if have server error
       })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
+      .catch((err) => {
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required body is missing !",
-      details: "Needed body is username, password, nama_petugas, level",
-    });
+    // Call services getPetugas
+    await petugas
+      .getPetugas(keyword, size, page)
+      .then((data) => {
+        // Check data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else {
+          res
+            .status(200)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = ""),
+                (details = data)
+              )
+            );
+        }
+        // Throw if have server error
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
+      });
   }
 });
 
-app.put("/", access_roles(["admin"]), async (req, res) => {
-  if (req.body.id_petugas) {
-    let data = {};
+// -- POST
+app.post("/", accessLimit(["admin"]), async (req, res) => {
+  // Fetch data from body
+  const { username, nama_petugas, password, level } = req.body;
 
-    for (key in req.body) {
-      data[key] = req.body[key];
-    }
-
-    if (data.password) {
-      delete data["password"];
-    }
-
-    if (data.username) {
-      await petugas
-        .findOne({
-          where: {
-            username: data.username,
-            id_petugas: {
-              [Op.ne]: data.id_petugas,
-            },
-          },
-        })
-        .then((surname) => {
-          console.log(surname);
-          if (surname) {
-            res.status(409).json({
-              status: res.statusCode,
-              message: "Username has been used",
-              details: "Try different username",
-            });
-          }
-        })
-        .catch((error) => {
-          res.status(500).json({
-            status: res.statusCode,
-            message: "Something went wrong on server side",
-            details: error.message,
-          });
-        });
-    }
-
+  // Check if have required body
+  if (username && nama_petugas && password) {
+    // Call services insertPetugas
     await petugas
-      .update(data, { where: { id_petugas: data.id_petugas } })
-      .then((scss) => {
-        if (scss[0]) {
-          petugas
-            .findOne({ where: { id_petugas: data.id_petugas } })
-            .then((resu) => {
-              delete resu.dataValues.password;
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully updated",
-                details: resu,
-              });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
+      .insPetugas(username, nama_petugas, password, level)
+      .then((data) => {
+        if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
+        } else if (data == errorHandling.DOUBLE_DATA) {
+          res
+            .status(409)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message =
+                  "Username " +
+                  username +
+                  " has been used, try different username")
+              )
+            );
         } else {
-          res.status(404).json({
-            status: res.statusCode,
-            message: "Data were not found",
-            details: null,
-          });
+          // Return data to user
+          res
+            .status(201)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = "Data sucessfully inserted"),
+                (details = data)
+              )
+            );
         }
+        // Throw if have server error
       })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
+      .catch((err) => {
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required body is missing !",
-      details:
-        "Needed body is id_petugas, and username or nama_petugas or level",
-    });
+    // Throw error to user
+    res.status(422).json(
+      new FixedResponse(
+        (code = res.statusCode),
+        (message =
+          "Required body is missing !" +
+          (await checkNull({
+            username,
+            nama_petugas,
+            password,
+            level,
+          })))
+      )
+    );
   }
 });
 
-app.delete("/", access_roles(["admin"]), async (req, res) => {
-  if (req.query.id_petugas) {
+app.put("/", accessLimit(["admin"]), async (req, res) => {
+  // Fetch data from body
+  const { id_petugas } = req.query;
+  const { username } = req.body;
+
+  // Check if have required body
+  if (id_petugas) {
+    // Call services putPetugas
     await petugas
-      .findOne({ where: { id_petugas: req.query.id_petugas } })
-      .then((resu) => {
-        if (resu) {
-          delete resu.dataValues.password;
-          petugas
-            .destroy({ where: { id_petugas: req.query.id_petugas } })
-            .then(
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully deleted",
-                details: resu,
-              })
-            )
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message: "Something went wrong on server side",
-                details: error.message,
-              });
-            });
+      .putPetugas(id_petugas, req.body)
+      .then((data) => {
+        // Check if bad req or not
+        if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
+          // Check if data not found
+        } else if (data == errorHandling.DOUBLE_DATA) {
+          res
+            .status(409)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message =
+                  "Username " +
+                  username +
+                  " has been used, try different username")
+              )
+            );
+        } else if (data == errorHandling.NOT_FOUND) {
+          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
         } else {
-          res.status(404).json({
-            status: res.statusCode,
-            message: "Data were not found",
-            details: null,
-          });
+          res
+            .status(200)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = "Data sucessfuly updated"),
+                (details = data)
+              )
+            );
         }
+        // Throw if have server error
       })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side",
-          details: error.message,
-        });
+      .catch((err) => {
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
-    res.status(422).json({
-      status: res.statusCode,
-      message: "Required params is missing !",
-      details: "Needed params is id_petugas",
-    });
+    // Throw error to user
+    res
+      .status(422)
+      .json(
+        new FixedResponse(
+          (code = res.statusCode),
+          (message =
+            "Required query params is missing !, id_petugas, body (optional) username or nama_petugas or password or level")
+        )
+      );
+  }
+});
+
+app.delete("/", accessLimit(["admin"]), async (req, res) => {
+  // Ftech data from query
+  const { id_petugas } = req.query;
+
+  // Check if have required query
+  if (id_petugas) {
+    // Call services delPetugas
+    await petugas
+      .delPetugas(id_petugas)
+      .then((data) => {
+        // Check if data is found or not
+        if (data == errorHandling.NOT_FOUND) {
+          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          // Return data to user
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
+          // Check if data not found
+        } else {
+          res
+            .status(200)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = "Data sucessfuly deleted"),
+                (details = data)
+              )
+            );
+        }
+      })
+      .catch((err) => {
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
+      });
+  } else {
+    // Throw error to user
+    res
+      .status(422)
+      .json(
+        new FixedResponse(
+          (code = res.statusCode),
+          (message = "Required query params is missing !, id_petugas")
+        )
+      );
   }
 });
 

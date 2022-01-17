@@ -6,6 +6,8 @@ const { Paged, passEncrypt } = require("../../domain/utils");
 const Op = sequelize.Op;
 const petugas = models.petugas;
 
+const regex = new RegExp("petugas|admin");
+
 async function getPetugas(keyword, size, page) {
   // Initiate like opertaor
   const data =
@@ -65,128 +67,134 @@ async function getPetugas(keyword, size, page) {
 }
 
 async function getPetugasByUsername(username) {
-  // Return with findall
-  return await petugas
-    .findOne({ where: { username: username } })
-    .then((data) => {
-      if (data) {
-        return data;
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (username) {
+    return await petugas
+      .findOne({ where: { username: username } })
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function getPetugasbyId(idPetugas) {
+  if (!Number.isNaN(Number.parseInt(idPetugas))) {
+    return await petugas
+      .findByPk(idPetugas, { attributes: { exclude: ["password"] } })
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
   // Return with findone
-  return await petugas
-    .findOne({ where: { id_petugas: idPetugas } })
-    .then((data) => {
-      if (data) {
-        return data;
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
 }
 
 async function insPetugas(username, namaPetugas, password, level) {
-  const data = {
-    username: username,
-    nama_petugas: namaPetugas,
-    password: await passEncrypt(username, password),
-    level: level,
-  };
+  if ((username, namaPetugas, password)) {
+    const data = {
+      username: username,
+      nama_petugas: namaPetugas,
+      password: await passEncrypt("petugas", password),
+      level: level,
+    };
 
-  // Check if has duplicate, becasue username is Uniqe key
-  return await petugas
-    .findOne({
-      where: { username: data.username },
-    })
-    .then(async (duplicate) => {
-      // Create new data
-      if (!duplicate) {
-        await petugas.create(data).catch((error) => {
+    return await petugas
+      .create(data)
+      .then((data) => {
+        delete data.dataValues.password;
+        return data;
+      })
+      .catch((error) => {
+        if (error.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else {
           throw error;
-        });
-      } else {
-        return errorHandling.DOUBLE_DATA;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
-async function putPetugas(idPetugas, username, namaPetugas, password, level) {
-  const data = {
-    username: username,
-    nama_petugas: namaPetugas,
-    password: await passEncrypt(username, password),
-    level: level,
-  };
+async function putPetugas(idPetugas, body) {
+  if (!Number.isNaN(Number.parseInt(idPetugas))) {
+    let data = {};
 
-  // Check if data is exists
-  return await petugas
-    .findOne({ where: { id_petugas: idPetugas } })
-    .then(async (found) => {
-      if (found) {
-        // Check if has duplicate username, because username is Uniqe key
-        await petugas
-          .findOne({ where: { username: data.username } })
-          .then(async (duplicate) => {
-            if (!duplicate) {
-              // Update petugas
-              await petugas
-                .update(data, { where: { id_petugas: idPetugas } })
-                .then(async (succces) => {
-                  if (succces[0]) {
-                    await petugas
-                      .findOne({ where: { id_Petugas: idPetugas } })
-                      .catch((error) => {
-                        throw error;
-                      });
-                  }
-                });
-            } else {
-              return errorHandling.DOUBLE_DATA;
-            }
-          });
-      } else {
-        return errorHandling.NOT_FOUND;
+    for (key in body) {
+      if (key == "level" && regex.test(body[key])) {
+        return errorHandling.BAD_REQ;
       }
-    })
-    .catch((error) => {
-      throw error;
-    });
+
+      if (key == "password") {
+        data[key] = await passEncrypt("petugas", body[key]);
+      } else {
+        data[key] = body[key];
+      }
+    }
+
+    return await petugas
+      .update(data, { where: { id_petugas: idPetugas } })
+      .then(async () => {
+        return await petugas
+          .findByPk(idPetugas, { attributes: { exclude: ["password"] } })
+          .then((find) => {
+            if (find) {
+              return find;
+            } else {
+              return errorHandling.NOT_FOUND;
+            }
+          })
+          .catch((err) => {
+            throw err;
+          });
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function delPetugas(idPetugas) {
-  // Get data before it's get deleted
-  return await petugas
-    .findOne({ where: { id_petugas: idPetugas } })
-    .then(async (data) => {
-      if (data) {
-        await petugas
-          .destroy({ where: { id_petugas: idPetugas } })
-          .then((success) => {
-            if (success[0]) {
-              return data;
-            }
-          });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (!Number.isNaN(Number.parseInt(idPetugas))) {
+    return await petugas
+      .findByPk(idPetugas, { attributes: { exclude: ["password"] } })
+      .then(async (data) => {
+        if (data) {
+          await petugas
+            .destroy({ where: { id_petugas: idPetugas } })
+            .catch((err) => {
+              throw err;
+            });
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 module.exports = {

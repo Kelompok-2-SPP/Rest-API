@@ -17,7 +17,7 @@ app.post("/", async (req, res) => {
       .findOne({ where: { username: req.body.username } })
       .then(async (found) => {
         if (found) {
-          if (await passDecrypt(req.body.username, req.body.password, found.password)) {
+          if (await passDecrypt("petugas", req.body.password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",
@@ -58,7 +58,6 @@ app.post("/", async (req, res) => {
         }
       })
       .catch((error) => {
-        console.log(error)
         res.status(500).json({
           status: res.statusCode,
           message: "Something went wrong on server side, " + error.message,
@@ -72,7 +71,7 @@ app.post("/", async (req, res) => {
       })
       .then(async (found) => {
         if (found) {
-          if (await passDecrypt(req.body.nisn, req.body.password, found.password)) {
+          if (await passDecrypt("siswa", req.body.password, found.password)) {
             res.status(200).json({
               status: res.statusCode,
               message: "Authorized",

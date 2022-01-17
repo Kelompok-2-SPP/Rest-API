@@ -1,6 +1,5 @@
 const express = require("express");
 const sequelize = require("sequelize");
-const md5 = require("md5");
 const models = require("../../data/models/index");
 const { authVerify, accessLimit, passEncrypt } = require("../../domain/utils");
 const app = express();
@@ -68,12 +67,12 @@ app.get("/", async (req, res) => {
 app.post("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.username && req.body.password && req.body.nama_petugas) {
     let data = ({ username, nama_petugas, level } = req.body);
-    data["password"] = await passEncrypt(data.username, data.password);
+    data["password"] = await passEncrypt("petugas", data.password);
     await petugas
       .findOne({ where: { username: data.username } })
       .then(async (duplicate) => {
         if (!duplicate) {
-         await petugas
+          await petugas
             .create(data)
             .then((result) => {
               delete result.dataValues.password;
@@ -136,7 +135,11 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then(async (surname) => {
-          username = !surname;
+          if (surname) {
+            username = false;
+          } else {
+            username = true;
+          }
         })
         .catch((error) => {
           res.status(500).json({
@@ -148,29 +151,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     }
 
     if (data.password) {
-      await petugas
-        .findOne({ where: { id_petugas: data.id_petugas } })
-        .then(async (user) => {
-          if (user) {
-            data["password"] = await passEncrypt(
-              data.username ? data.username : user.username,
-              data.password
-            );
-          } else {
-            res.status(404).json({
-              status: res.statusCode,
-              message: "Data were not found",
-              details: null,
-            });
-          }
-        })
-        .catch((error) => {
-          res.status(500).json({
-            status: res.statusCode,
-            message: "Something went wrong on server side, " + error.message,
-            details: null,
-          });
-        });
+      data["password"] = await passEncrypt("petugas", data.password);
     }
 
     if (username) {

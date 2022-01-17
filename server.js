@@ -16,19 +16,19 @@ app.use("/api/v1/petugas", routerv1.petugas);
 app.use("/api/v1/pembayaran", routerv1.pembayaran);
 
 // API V.2.0
-// const routerV2 = require("./router/v2");
+const routerV2 = require("./router/v2");
 
-// app.use("/api/v2/auth", require("./router/v2/auth"));
-// app.use("/api/v2/kelas", require("./router/v2/kelas"));
-// app.use("/api/v2/siswa", siswaV2);
-// app.use("/api/v2/kelas", kelasV2);
-// app.use("/api/v2/petugas", petugasV2);
-// app.use("/api/v2/pembayaran", pembayaranV2);
+app.use("/api/v2/auth", routerV2.auth);
+app.use("/api/v2/spp", routerV2.spp);
+app.use("/api/v2/siswa", routerV2.siswa);
+app.use("/api/v2/kelas", routerV2.kelas);
+app.use("/api/v2/petugas", routerV2.petugas);
+app.use("/api/v2/pembayaran", routerV2.pembayaran);
 
-// // API DOCUMENTATION
-// app.get("/api", function (req, res) {
-//   res.redirect("https://app.example.io");
-// });
+// NOT FOUND FALLBACK TO DOCUMENTATION
+app.use(function(req, res) {
+  res.redirect("https://github.com/Kelompok-2-SPP/Rest-API");
+});
 
 app.use(express.static(__dirname));
 

@@ -30,6 +30,8 @@ app.get("/", async (req, res) => {
         if (data == errorHandling.NOT_FOUND) {
           res.status(404).json(new FixedResponse(res.statusCode));
           // Return data to user
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
         } else {
           res
             .status(200)
@@ -44,11 +46,7 @@ app.get("/", async (req, res) => {
         // Throw if have server error
       })
       .catch((err) => {
-        res
-          .status(500)
-          .json(
-            new FixedResponse((code = res.statusCode), (message = err.message))
-          );
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
     // Call services getKelas
@@ -73,12 +71,7 @@ app.get("/", async (req, res) => {
         // Throw if have server error
       })
       .catch((err) => {
-        console.log(err);
-        res
-          .status(500)
-          .json(
-            new FixedResponse((code = res.statusCode), (message = err.message))
-          );
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   }
 });
@@ -96,15 +89,20 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
       .then((data) => {
         // Check if double data or not
         if (data == errorHandling.DOUBLE_DATA) {
-          res.status(409).
-            json(
+          res
+            .status(409)
+            .json(
               new FixedResponse(
                 (code = res.statusCode),
                 (message =
-                  nama_kelas + " has been used, try different nama_kelas")
+                  "Nama kelas " +
+                  nama_kelas +
+                  " has been used, try different nama_kelas")
               )
             );
           // Return data to user
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
         } else {
           res
             .status(201)
@@ -119,9 +117,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
         // Throw if have server error
       })
       .catch((err) => {
-        res
-          .status(500)
-          .json(new FixedResponse((code = res.statusCode), (message = err)));
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
     // Throw error to user
@@ -138,29 +134,36 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
   }
 });
 
+// -- PUT
 app.put("/", accessLimit(["admin"]), async (req, res) => {
   // Fetch data from body
-  const { id_kelas, nama_kelas, jurusan, angkatan } = req.body;
+  const { nama_kelas } = req.body;
+  const { id_kelas } = req.query;
 
   // Check if have required body
   if (id_kelas) {
     // Call services putKelas
     await kelas
-      .putKelas(id_kelas, nama_kelas, jurusan, angkatan)
+      .putKelas(id_kelas, req.body)
       .then((data) => {
         // Check if double data or not
         if (data == errorHandling.DOUBLE_DATA) {
-          res.status(409).
-            json(
+          res
+            .status(409)
+            .json(
               new FixedResponse(
                 (code = res.statusCode),
                 (message =
-                  nama_kelas + " has been used, try different nama_kelas")
+                  "Nama kelas " +
+                  nama_kelas +
+                  " has been used, try different nama_kelas")
               )
             );
           // Check if data not found
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
         } else if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          res.status(404).json(new FixedResponse(res.statusCode));
           // Return data to user
         } else {
           res
@@ -168,7 +171,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             .json(
               new FixedResponse(
                 (code = res.statusCode),
-                (message = ""),
+                (message = "Data sucessfuly updated"),
                 (details = data)
               )
             );
@@ -176,9 +179,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         // Throw if have server error
       })
       .catch((err) => {
-        res
-          .status(500)
-          .json(new FixedResponse((code = res.statusCode), (message = err)));
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
     // Throw error to user
@@ -188,13 +189,13 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         new FixedResponse(
           (code = res.statusCode),
           (message =
-            "Required body is missing !" +
-            (await checkNull({ id_kelas, nama_kelas, jurusan, angkatan })))
+            "Required query params is missing !, id_kelas. body (optional) nama_kelas or jurusan or angkatan")
         )
       );
   }
 });
 
+// -- DELETE
 app.delete("/", accessLimit(["admin"]), async (req, res) => {
   // Ftech data from query
   const { id_kelas } = req.query;
@@ -207,22 +208,24 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .then((data) => {
         // Check if data is found or not
         if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          res.status(404).json(new FixedResponse(res.statusCode));
           // Return data to user
+        } else if (data == errorHandling.BAD_REQ) {
+          res.status(400).json(new FixedResponse(res.statusCode));
         } else {
           res
             .status(200)
             .json(
               new FixedResponse(
                 (code = res.statusCode),
-                (message = ""),
+                (message = "Data sucessfuly deleted"),
                 (details = data)
               )
             );
         }
       })
       .catch((err) => {
-        res.status(500).json(new FixedResponse((code = res.statusCode), (message = err)));
+        res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
   } else {
     // Throw error to user
@@ -231,7 +234,7 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .json(
         new FixedResponse(
           (code = res.statusCode),
-          (message = "Required query is missing !, id_kelas")
+          (message = "Required query params is missing !, id_kelas")
         )
       );
   }

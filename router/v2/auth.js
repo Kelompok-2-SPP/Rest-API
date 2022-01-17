@@ -22,7 +22,8 @@ app.post("/", async (req, res) => {
       .then(async (data) => {
         if (
           data != errorHandling.NOT_FOUND &&
-          await passDecrypt(username, password, data.password)
+          data != errorHandling.BAD_REQ &&
+          (await passDecrypt("petugas", password, data.password))
         ) {
           res.status(200).json(
             new FixedResponse(
@@ -58,15 +59,18 @@ app.post("/", async (req, res) => {
         }
       })
       .catch((err) => {
-        res.status(500).json(new FixedResponse((code = res.statusCode), (message = err)));
+        res
+          .status(500)
+          .json(new FixedResponse((code = res.statusCode), (message = err)));
       });
   } else if (nisn && password) {
     await siswa
-      .getSiswabyId(nisn)
+      .getSiswabyIdAuth(nisn)
       .then(async (data) => {
         if (
-          data &&
-          (await passDecrypt(nisn, password, data.password).catch(() => {}))
+          data != errorHandling.NOT_FOUND &&
+          data != errorHandling.BAD_REQ &&
+          (await passDecrypt("siswa", password, data.password))
         ) {
           res.status(200).json(
             new FixedResponse(
@@ -104,7 +108,9 @@ app.post("/", async (req, res) => {
         }
       })
       .catch((err) => {
-        res.status(500).json(new FixedResponse((code = res.statusCode), (message = err)));
+        res
+          .status(500)
+          .json(new FixedResponse((code = res.statusCode), (message = err)));
       });
   } else {
     res
@@ -114,7 +120,7 @@ app.post("/", async (req, res) => {
           (code = res.statusCode),
           (message =
             "Required body is missing !, username or nisn" +
-            (await checkNull({password})))
+            (await checkNull({ password })))
         )
       );
   }

@@ -1,10 +1,14 @@
 const sequelize = require("sequelize");
 const models = require("../models");
 const { errorHandling } = require("../../domain/const");
-const { Paged } = require("../../domain/utils");
+const { Paged, verifyDate } = require("../../domain/utils");
 
 const Op = sequelize.Op;
+
 const pembayaran = models.pembayaran;
+const petugas = models.petugas;
+const siswa = models.siswa;
+const spp = models.spp;
 
 async function getPembayaran(keyword, size, page) {
   // Initiate like opertaor
@@ -68,7 +72,7 @@ async function getPembayaran(keyword, size, page) {
           as: "spp",
         },
       ],
-      order: [["createdAt", "ASC"]],
+      order: [["updatedAt", "ASC"]],
     })
     .then((data) => {
       if (data.count > 0) {
@@ -87,123 +91,126 @@ async function getPembayaran(keyword, size, page) {
 }
 
 async function getPembayaranbyId(idPembayaran) {
-  // Return with findone
-  return await pembayaran
-    .findOne({ where: { id_pembayaran: idPembayaran } })
-    .then((data) => {
-      if (data) {
+  if (!Number.isNaN(Number.parseInt(idPembayaran))) {
+    // Return with findone
+    return await pembayaran
+      .findByPk({ where: { id_pembayaran: idPembayaran } })
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
+}
+
+async function insPembayaran(idPetugas, nisn, tglDibayar, idSpp, jumlahBayar) {
+  if (
+    !Number.isNaN(Number.parseInt(idPetugas)) &&
+    nisn &&
+    verifyDate(tglDibayar) &&
+    !Number.isNaN(Number.parseInt(idSpp)) &&
+    !Number.isNaN(Number.parseInt(jumlahBayar))
+  ) {
+    const date = new Date(tglDibayar);
+    const data = {
+      id_petugas: idPetugas,
+      nisn: nisn,
+      tgl_dibayar: tglDibayar,
+      bulan_dibayar: date.getMonth,
+      tahun_dibayar: date.getFullYear,
+      id_spp: idSpp,
+      jumlah_bayar: jumlahBayar,
+    };
+
+    return await pembayaran
+      .create(data)
+      .then((data) => {
         return data;
-      } else {
-        return errorHandling.NOT_FOUND;
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeForeignKeyConstraintError") {
+          return errorHandling.INDEX_NOT_FOUND;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
+}
+
+async function putPembayaran(idPembayaran, body) {
+  if (!Number.isNaN(Number.parseInt(idPembayaran))) {
+    let data = {};
+
+    const regex = new RegExp("id_petugas|id_spp|jumlah_bayar");
+
+    for (key in body) {
+      if (regex.test(key) && Number.isNaN(body[key])) {
+        return errorHandling.BAD_REQ;
       }
-    })
-    .catch((error) => {
-      throw error;
-    });
-}
-
-async function insPembayaran(
-  idPetugas,
-  nisn,
-  tglDibayar,
-  bulanDibayar,
-  tahunDibayar,
-  idSpp,
-  jumlahBayar
-) {
-  const data = {
-    id_petugas: idPetugas,
-    nisn: nisn,
-    tgl_dibayar: tglDibayar,
-    bulan_dibayar: bulanDibayar,
-    tahun_dibayar: tahunDibayar,
-    id_spp: idSpp,
-    jumlah_bayar: jumlahBayar,
-  };
-
-  return await pembayaran.create(data).catch((error) => {
-    throw error;
-  });
-}
-
-async function putPembayaran(
-  idPembayaran,
-  idPetugas,
-  nisn,
-  tglDibayar,
-  bulanDibayar,
-  tahunDibayar,
-  idSpp,
-  jumlahBayar
-) {
-  const data = {
-    id_petugas: idPetugas,
-    nisn: nisn,
-    tgl_dibayar: tglDibayar,
-    bulan_dibayar: bulanDibayar,
-    tahun_dibayar: tahunDibayar,
-    id_spp: idSpp,
-    jumlah_bayar: jumlahBayar,
-  };
-
-  // Check if data is exists
-  return await pembayaran
-    .findOne({ where: { id_pembayaran: idPembayaran } })
-    .then(async (found) => {
-      if (found) {
-        // Update pembayaran
-        await pembayaran
-          .update(data, { where: { id_pembayaran: idPembayaran } })
-          .then(async (success) => {
-            if (success[0]) {
-              return await pembayaran
-                .findOne({
-                  where: { id_pembayaran: idPembayaran },
-                })
-                .catch((error) => {
-                  throw error;
-                });
+      if (key == "tgl_dibayar" && verifyDate(body[key])) {
+        return errorHandling.BAD_REQ;
+      }
+      data[key] = body[key];
+    }
+    return await pembayaran
+      .update(data, { where: { id_pembayaran: idPembayaran } })
+      .then(async () => {
+        return await pembayaran
+          .findByPk(idPembayaran)
+          .then((find) => {
+            if (find) {
+              return find;
             } else {
-              return errorHandling.FAILED;
+              return errorHandling.NOT_FOUND;
             }
           })
           .catch((error) => {
             throw error;
           });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeForeignKeyConstraintError") {
+          return errorHandling.INDEX_NOT_FOUND;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function delPembayaran(idPembayaran) {
-  // Get data before it's get deleted
-  return await pembayaran
-    .findOne({ where: { id_pembayaran: idPembayaran } })
-    .then(async (data) => {
-      if (data) {
-        await pembayaran
-          .destroy({ where: { id_pembayaran: idPembayaran } })
-          .then((success) => {
-            if (success[0]) {
-              return data;
-            } else {
-              return errorHandling.FAILED;
-            }
-          })
-          .catch((error) => {
-            throw error;
-          });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (!Number.isNaN(idPembayaran)) {
+    return await pembayaran
+      .findByPk(idPembayaran)
+      .then(async (data) => {
+        if (data) {
+          await pembayaran
+            .destroy({ where: { id_pembayaran: idPembayaran } })
+            .catch((error) => {
+              throw error;
+            });
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 module.exports = {

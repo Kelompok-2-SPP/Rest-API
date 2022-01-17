@@ -6,6 +6,7 @@ const { Paged } = require("../../domain/utils");
 const Op = sequelize.Op;
 const kelas = models.kelas;
 
+// Kelas get kelas all
 async function getKelas(keyword, size, page) {
   // Initiate like opertaor
   const data =
@@ -59,124 +60,119 @@ async function getKelas(keyword, size, page) {
     });
 }
 
+// Kelas get kelas by id
 async function getKelasbyId(idKelas) {
-  // Return with findone
-  return await kelas
-    .findOne({ where: { id_kelas: idKelas } })
-    .then((data) => {
-      if (data) {
-        return data;
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (!Number.isNaN(Number.parseInt(idKelas))) {
+    // Return with findone
+    return await kelas
+      .findByPk(idKelas)
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
+// Kelas insert new data
 async function insKelas(namaKelas, jurusan, angkatan) {
-  const data = {
-    nama_kelas: namaKelas,
-    jurusan: jurusan,
-    angkatan: angkatan,
-  };
-
-  // Check if has duplicate, becasue nama_kelas is Uniqe key
-  return await kelas
-    .findOne({
-      where: { nama_kelas: data.nama_kelas },
-    })
-    .then(async (duplicate) => {
-      // Create new data
-      if (!duplicate) {
-        return await kelas.create(data).catch((error) => {
-          throw error;
-        });
-      } else {
-        return errorHandling.DOUBLE_DATA;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (namaKelas && jurusan && !Number.isNaN(Number.parseInt(angkatan))) {
+    const data = {
+      nama_kelas: namaKelas,
+      jurusan: jurusan,
+      angkatan: angkatan,
+    };
+    return await kelas
+      .create(data)
+      .then((data) => {
+        return data;
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
-async function putKelas(idKelas, data) {
-  const data = {
-    nama_kelas: namaKelas,
-    jurusan: jurusan,
-    angkatan: angkatan,
-  };
-  // Check if data is exists
-  return await kelas
-    .findOne({ where: { id_kelas: idKelas } })
-    .then(async (found) => {
-      if (found) {
-        // Check if has duplicate nama_kelas, because nama_kelas is Uniqe key
-        await kelas
-          .findOne({ where: { nama_kelas: data.nama_kelas } })
-          .then(async (duplicate) => {
-            if (!duplicate) {
-              // Update kelas
-              await kelas
-                .update(data, { where: { id_kelas: idKelas } })
-                .then(async (success) => {
-                  // Return class data
-                  if (success[0]) {
-                    return await kelas
-                      .findOne({ where: { id_kelas: idKelas } })
-                      .catch((error) => {
-                        throw error;
-                      });
-                  } else {
-                    return errorHandling.FAILED;
-                  }
-                })
-                .catch((error) => {
-                  throw error;
-                });
-            } else {
-              return errorHandling.DOUBLE_DATA;
+// Kelas put data
+async function putKelas(idKelas, body) {
+  if (!Number.isNaN(Number.parseInt(idKelas))) {
+    // Init null var
+    let data = {};
+
+    // Literate body to data
+    for (key in body) {
+      if (key == "angkatan" && Number.isNaN(Number.parseInt(body[key]))) {
+        return errorHandling.BAD_REQ;
+      }
+      data[key] = body[key];
+    }
+
+    // Begin update sequence
+    return await kelas
+      .update(data, { where: { id_kelas: idKelas } })
+      .then(async () => {
+        return await kelas
+          .findByPk(idKelas)
+          .then((find) => {
+            if (find) {
+              return find;
+            }else{
+              return errorHandling.NOT_FOUND
             }
           })
           .catch((error) => {
             throw error;
           });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
+// Kelas destroy
 async function delKelas(idKelas) {
-  // Get data before it's get deleted
-  return await kelas
-    .findOne({ where: { id_kelas: idKelas } })
-    .then(async (data) => {
-      if (data) {
-        await kelas
-          .destroy({ where: { id_kelas: idKelas } })
-          .then((check) => {
-            if (check[0]) {
-              return data;
-            } else {
-              return errorHandling.FAILED;
-            }
-          })
-          .catch((error) => {
-            throw error;
-          });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (!Number.isNaN(Number.parseInt(idKelas))) {
+    // Get data before it's get deleted
+    return await kelas
+      .findByPk(idKelas)
+      .then(async (data) => {
+        if (data) {
+          await kelas
+            .destroy({ where: { id_kelas: idKelas } })
+            .catch((error) => {
+              throw error;
+            });
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 module.exports = {

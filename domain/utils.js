@@ -16,11 +16,16 @@ class FixedResponse {
         this.message = "Data were not found";
         this.details = details;
         break;
+      // case 400
+      case 400:
+        this.status = code;
+        this.message = "Bad request, please read the documentation";
+        this.details = details;
+        break;
       // case 500
       case 500:
         this.status = code;
-        this.message =
-          "Something went wrong on server side, " + message.message;
+        this.message = "Something went wrong on server side, " + message;
         this.details = details;
         break;
       // default response
@@ -107,55 +112,79 @@ authVerify = async (req, res, next) => {
 // Roles access
 accessLimit = (roles) => {
   return (req, res, next) => {
-    const dcdToken = jwt.verify(token, secretKey.petugas, { complete: true });
-    let allowed = false;
+    jwt.verify(token, secretKey.petugas, { complete: true }, (err, dcdToken) => {
+      if (err) {
+        res
+          .status(405)
+          .json(
+            new FixedResponse(
+              (code = res.statusCode),
+              (message =
+                "Unauthorized, You're not allowed to using this method")
+            )
+          );
+      } else {
+        let allowed = false;
 
-    // check role
-    for (x of roles) {
-      if (x == dcdToken.payload.level) {
-        allowed = true;
+        // check role
+        for (x of roles) {
+          if (x == dcdToken.payload.level) {
+            allowed = true;
+          }
+        }
+
+        if (allowed) {
+          next();
+        } else {
+          res
+            .status(405)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message =
+                  "Unauthorized, You're not allowed to using this method")
+              )
+            );
+        }
       }
-    }
-
-    if (allowed) {
-      next();
-    } else {
-      res
-        .status(401)
-        .json(
-          new FixedResponse(
-            (code = res.statusCode),
-            (message = "Unauthorized, You're not allowed to using this method")
-          )
-        );
-    }
+    });
   };
 };
 
-passEncrypt = async (username, password) => {
+passEncrypt = async (type, password) => {
   const saltRound = 10;
   let pas = "";
 
-  if (!Number.isNaN(username)) {
-    pas = username + password + secretKey.siswa;
+  if (type == "siswa") {
+    pas = password + secretKey.siswa;
   } else {
-    pas = username + password + secretKey.petugas;
+    pas = password + secretKey.petugas;
   }
 
   // Begin encryption using bcrypt
   return await bcrypt.hash(pas, saltRound);
 };
 
-passDecrypt = async (username, password, hashed) => {
+passDecrypt = async (type, password, hashed) => {
   let pas = "";
 
-  if (!Number.isNaN(username)) {
-    pas = username + password + secretKey.siswa;
+  if (type == "siswa") {
+    pas = password + secretKey.siswa;
   } else {
-    pas = username + password + secretKey.petugas;
+    pas = password + secretKey.petugas;
   }
 
   return await bcrypt.compare(pas, hashed);
+};
+
+verifyDate = (date) => {
+  if (!/^\d\d\/\d\d\/\d\d\d\d$/.test(date)) {
+    return false;
+  }
+  const [dd, mm, yyyy] = date.split("/").map((p) => parseInt(p));
+  parts[mm] -= 1;
+  const d = new Date(dd, mm, yyyy);
+  return d.getDate() === dd && d.getMonth() === mm && d.getFullYear() === yyyy;
 };
 
 module.exports = {
@@ -166,4 +195,5 @@ module.exports = {
   FixedResponse,
   accessLimit,
   checkNull,
+  verifyDate,
 };

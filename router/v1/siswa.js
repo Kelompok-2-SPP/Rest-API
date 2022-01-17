@@ -1,6 +1,5 @@
 const express = require("express");
 const sequelize = require("sequelize");
-const md5 = require("md5");
 const models = require("../../data/models/index");
 const { authVerify, accessLimit } = require("../../domain/utils");
 const app = express();
@@ -82,7 +81,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
     req.body.no_telp
   ) {
     let data = ({ nisn, nis, nama, id_kelas, alamat, no_telp } = req.body);
-    data["password"] = await passEncrypt(data.nisn, data.password);
+    data["password"] = await passEncrypt("siswa", data.password);
     await siswa
       .findOne({
         where: {
@@ -143,14 +142,15 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
 
 app.put("/", accessLimit(["admin"]), async (req, res) => {
   if (req.body.nisn) {
-    let {nisn, nis} = true
+    let nisn = true;
+    let nis = true;
     let data = {};
 
     for (key in req.body) {
       data[key] = req.body[key];
     }
 
-    if (req.body.new_nisn) {
+    if (data.new_nisn) {
       data["nisn"] = req.body.new_nisn;
       delete data["new_nisn"];
       await siswa
@@ -167,7 +167,11 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then((find) => {
-          nisn = !find
+          if (find) {
+            nisn = false;
+          } else {
+            nisn = true;
+          }
         })
         .catch((error) => {
           res.status(500).json({
@@ -178,7 +182,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         });
     }
 
-    if (req.body.nis) {
+    if (data.nis) {
       await siswa
         .findOne({
           where: {
@@ -193,7 +197,11 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           },
         })
         .then((find) => {
-          nis = !find
+          if (find) {
+            nis = false;
+          } else {
+            nis = true;
+          }
         })
         .catch((error) => {
           res.status(500).json({
@@ -205,58 +213,51 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     }
 
     if (data.password) {
-      data["password"] = await passEncrypt(data.nisn, data.password);
+      data["password"] = await passEncrypt("siswa", data.password);
     }
-    
 
-    if(nisn && nis){
+    if (nisn && nis) {
       await siswa
-      .update(data, { where: {nisn: req.body.nisn} })
-      .then(async (scss) => {
-        if (scss[0]) {
-          await siswa
-            .findOne({ where: { nisn: data.nisn } })
-            .then((resu) => {
-              delete resu.dataValues.password;
-              res.status(200).json({
-                status: res.statusCode,
-                message: "Data succesfully updated",
-                details: resu,
+        .update(data, { where: { nisn: req.body.nisn } })
+        .then(async (scss) => {
+          if (scss[0]) {
+            await siswa
+              .findOne({ where: { nisn: data.nisn } })
+              .then((resu) => {
+                delete resu.dataValues.password;
+                res.status(200).json({
+                  status: res.statusCode,
+                  message: "Data succesfully updated",
+                  details: resu,
+                });
+              })
+              .catch((error) => {
+                res.status(500).json({
+                  status: res.statusCode,
+                  message:
+                    "Something went wrong on server side, " + error.message,
+                  details: null,
+                });
               });
-            })
-            .catch((error) => {
-              res.status(500).json({
-                status: res.statusCode,
-                message:
-                  "Something went wrong on server side, " + error.message,
-                details: null,
-              });
+          } else {
+            res.status(404).json({
+              status: res.statusCode,
+              message: "Data were not found",
+              details: null,
             });
-        } else {
-          res.status(404).json({
+          }
+        })
+        .catch((error) => {
+          res.status(500).json({
             status: res.statusCode,
-            message: "Data were not found",
+            message: "Something went wrong on server side, " + error.message,
             details: null,
           });
-        }
-      })
-      .catch((error) => {
-        res.status(500).json({
-          status: res.statusCode,
-          message: "Something went wrong on server side, " + error.message,
-          details: null,
         });
-      });
-    } else if(!nisn){
+    } else if (!nisn && !nis) {
       res.status(409).json({
         status: res.statusCode,
-        message: "Nisn has been used, Try different nisn",
-        details: null,
-      });
-    } else if (!nis){
-      res.status(409).json({
-        status: res.statusCode,
-        message: "Nis has been used, Try different nis",
+        message: "Nisn or Nis has been used, Try different nisn or nis",
         details: null,
       });
     }
@@ -274,7 +275,7 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.nisn) {
     await siswa
       .findOne({ where: { nisn: req.query.nisn } })
-      .then(async(resu) => {
+      .then(async (resu) => {
         if (resu) {
           delete resu.dataValues.password;
           await siswa

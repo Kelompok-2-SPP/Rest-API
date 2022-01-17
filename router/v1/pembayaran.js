@@ -141,7 +141,7 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
     }
     await pembayaran
       .update(data, { where: { id_pembayaran: data.id_pembayaran } })
-      .then(async(scss) => {
+      .then(async (scss) => {
         if (scss[0]) {
           await pembayaran
             .findOne({ where: { id_pembayaran: data.id_pembayaran } })

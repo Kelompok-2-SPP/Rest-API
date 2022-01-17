@@ -70,145 +70,158 @@ async function getSiswa(keyword, size, page) {
     });
 }
 
+async function getSiswabyIdAuth(nisn) {
+  if (nisn) {
+    return await siswa
+      .findByPk(nisn)
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
+}
+
 async function getSiswabyId(nisn) {
-  // Return with findone
-  return await siswa
-    .findOne({ where: { nisn: nisn } })
-    .then((data) => {
-      if (data) {
-        return data;
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+  if (nisn) {
+    return await siswa
+      .findByPk(nisn, { attributes: { exclude: ["password"] } })
+      .then((data) => {
+        if (data) {
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function insSiswa(nisn, password, nis, nama, idKelas, alamat, noTelp) {
-  const data = {
-    nisn: nisn,
-    password: await passEncrypt(nisn, password),
-    nis: nis,
-    nama: nama,
-    id_kelas: idKelas,
-    alamat: alamat,
-    no_telp: parseInt(noTelp),
-  };
+  if (
+    (nisn &&
+      password &&
+      nis &&
+      nama &&
+      !Number.isNaN(Number.parseInt(idKelas)) &&
+      alamat,
+    !Number.isNaN(Number.parseInt(noTelp)))
+  ) {
+    const data = {
+      nisn: nisn,
+      password: await passEncrypt("siswa", password),
+      nis: nis,
+      nama: nama,
+      id_kelas: idKelas,
+      alamat: alamat,
+      no_telp: noTelp,
+    };
 
-  // Check if has duplicate, becasue nisn is Primary key and also nis is Uniqe key
-  return await siswa
-    .findOne({
-      where: { nisn: data.nisn, nis: data.nis },
-    })
-    .then(async (duplicate) => {
-      // Create new data
-      if (!duplicate) {
-        return await siswa.create(data).catch((error) => {
-          throw error;
-        });
-      } else {
-        return errorHandling.DOUBLE_DATA;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+    return await siswa
+      .create(data)
+      .then((data) => {
+        delete data.dataValues.password;
+        return data;
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else if (err.name == "SequelizeForeignKeyConstraintError") {
+          return errorHandling.INDEX_NOT_FOUND;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
-async function putSiswa(
-  nisn,
-  newNisn,
-  password,
-  nis,
-  nama,
-  idKelas,
-  alamat,
-  noTelp
-) {
-  const data = {
-    nisn: newNisn,
-    password:
-      newNisn == null
-        ? await passEncrypt(nisn, password)
-        : await passEncrypt(newNisn, password),
-    nis: nis,
-    nama: nama,
-    id_kelas: idKelas,
-    alamat: alamat,
-    no_telp: noTelp,
-  };
-  // Check if data is exists
-  return await siswa
-    .findOne({ where: { nisn: nisn } })
-    .then(async (found) => {
-      if (found) {
-        // Check if has duplicate, becasue nisn is Primary key and also nis is Uniqe key
-        await siswa
-          .findOne({ where: { nisn: data.nisn, nis: data.nis } })
-          .then(async (duplicate) => {
-            if (!duplicate) {
-              // Update siswa
-              await siswa
-                .update(data, { where: { nisn: nisn } })
-                .then(async (succces) => {
-                  if (succces[0]) {
-                    return await siswa
-                      .findOne({ wher: { nis: data.nisn } })
-                      .catch((error) => {
-                        throw error;
-                      });
-                  } else {
-                    return errorHandling.FAILED;
-                  }
-                })
-                .catch((error) => {
-                  throw error;
-                });
+async function putSiswa(nisn, body) {
+  if (nisn) {
+    let data = {};
+
+    const regex = new RegExp("id_kelas|no_telp");
+
+    for (key in body) {
+      if (regex.test(key) && Number.isNaN(Number.parseInt(body[key]))) {
+        return errorHandling.BAD_REQ;
+      }
+      if (key == "password") {
+        data[key] = await passEncrypt("siswa", body[key]);
+      } else {
+        data[key] = body[key];
+      }
+    }
+
+    return await siswa
+      .update(data, { where: { nisn: nisn } })
+      .then(async () => {
+        return await siswa
+          .findByPk(data.nisn ? data.nisn : nisn, {
+            attributes: { exclude: ["password"] },
+          })
+          .then((find) => {
+            if (find) {
+              return find;
             } else {
-              return errorHandling.DOUBLE_DATA;
+              return errorHandling.NOT_FOUND;
             }
           })
-          .catch((error) => {
-            throw error;
+          .catch((err) => {
+            throw err;
           });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+      })
+      .catch((err) => {
+        if (err.name == "SequelizeUniqueConstraintError") {
+          return errorHandling.DOUBLE_DATA;
+        } else if (err.name == "SequelizeForeignKeyConstraintError") {
+          return errorHandling.INDEX_NOT_FOUND;
+        } else {
+          throw err;
+        }
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 async function delSiswa(nisn) {
-  // Get data before it's get deleted
-  return await siswa
-    .findOne({ where: { nisn: nisn } })
-    .then(async (data) => {
-      if (data) {
-        await siswa
-          .destroy({ where: { nisn: nisn } })
-          .then((success) => {
-            if (success[0]) {
-              return data;
-            }
-          })
-          .catch((error) => {
-            throw error;
+  if (nisn) {
+    return await siswa
+      .findByPk(nisn, { attributes: { exclude: ["password"] } })
+      .then(async (data) => {
+        if (data) {
+          await siswa.destroy({ where: { nisn: nisn } }).catch((err) => {
+            throw err;
           });
-      } else {
-        return errorHandling.NOT_FOUND;
-      }
-    })
-    .catch((error) => {
-      throw error;
-    });
+          return data;
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((err) => {
+        throw err;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
 }
 
 module.exports = {
   getSiswa,
+  getSiswabyIdAuth,
   getSiswabyId,
   insSiswa,
   putSiswa,

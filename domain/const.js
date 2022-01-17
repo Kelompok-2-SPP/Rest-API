@@ -1,8 +1,9 @@
 // Error handling
 const errorHandling = {
   DOUBLE_DATA: "Double data",
+  INDEX_NOT_FOUND: "Foreign key not found",
   NOT_FOUND: "Data were not found",
-  FAILED: "Failed to proccess request"
+  BAD_REQ: "Bad request"
 };
 
 // Secret key dict
@@ -11,8 +12,7 @@ const secretKey = {
   siswa: "siswaSPP",
 };
 
-
 module.exports = {
-    errorHandling,
-    secretKey
-}
+  errorHandling,
+  secretKey,
+};
