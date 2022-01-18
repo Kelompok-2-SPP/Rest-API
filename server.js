@@ -27,7 +27,7 @@ app.use("/api/v2/pembayaran", routerV2.pembayaran);
 
 // NOT FOUND FALLBACK TO DOCUMENTATION
 app.use(function(req, res) {
-  res.redirect("https://github.com/Kelompok-2-SPP/Rest-API");
+  res.redirect("https://documenter.getpostman.com/view/19193294/UVXkpb1a");
 });
 
 app.use(express.static(__dirname));
