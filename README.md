@@ -2,7 +2,7 @@
 Rest API for android-based spp payment apps practice to facilitate backend communication.
 
 [API Endpoint v1 🍳](https://praktek-ukk-spp.herokuapp.com/api/v1/)<br />
-[API Endpoint v2 🎃](https://praktek-ukk-spp.herokuapp.com/api/v1/)<br />
+[API Endpoint v2 🎃](https://praktek-ukk-spp.herokuapp.com/api/v2/)<br />
 [SQL Database 🧵](https://raw.githubusercontent.com/Kelompok-2-SPP/Rest-API/master/.github/pembayaran_spp.sql)
 
 <br />
