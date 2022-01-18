@@ -24,6 +24,12 @@ async function getPetugas(keyword, size, page) {
             {
               level: { [Op.like]: `%${keyword}%` },
             },
+            {
+              updatedAt: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              createdAt: { [Op.like]: `%${keyword}%` },
+            },
           ],
         };
 

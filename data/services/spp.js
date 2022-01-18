@@ -22,6 +22,12 @@ async function getSpp(keyword, size, page) {
             {
               nominal: { [Op.like]: `%${keyword}%` },
             },
+            {
+              updatedAt: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              createdAt: { [Op.like]: `%${keyword}%` },
+            },
           ],
         };
 

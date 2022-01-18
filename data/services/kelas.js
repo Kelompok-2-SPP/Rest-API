@@ -23,6 +23,12 @@ async function getKelas(keyword, size, page) {
             {
               angkatan: { [Op.like]: `%${keyword}%` },
             },
+            {
+              updatedAt: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              createdAt: { [Op.like]: `%${keyword}%` },
+            },
           ],
         };
 

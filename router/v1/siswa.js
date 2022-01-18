@@ -26,12 +26,6 @@ app.get("/", async (req, res) => {
         {
           nama: { [Op.like]: `%${req.query.keyword}%` },
         },
-        {
-          alamat: { [Op.like]: `%${req.query.keyword}%` },
-        },
-        {
-          no_telp: { [Op.like]: `%${req.query.keyword}%` },
-        },
       ],
     };
   } else {

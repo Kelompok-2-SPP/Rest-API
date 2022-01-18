@@ -123,7 +123,7 @@ app.post("/", async (req, res) => {
   } else {
     res.status(500).json({
       status: res.statusCode,
-      message: "Something went wrong on server side, " + error.message,
+      message: "Required body is missing, username or nisn and password",
       details: null,
     });
   }

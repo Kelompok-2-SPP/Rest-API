@@ -180,7 +180,7 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
       status: res.statusCode,
       message:
         "Required body is missing !, Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
-      details: nulll,
+      details: null,
     });
   }
 });

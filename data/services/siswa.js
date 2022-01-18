@@ -23,10 +23,10 @@ async function getSiswa(keyword, size, page) {
               nama: { [Op.like]: `%${keyword}%` },
             },
             {
-              alamat: { [Op.like]: `%${keyword}%` },
+              updatedAt: { [Op.like]: `%${keyword}%` },
             },
             {
-              no_telp: { [Op.like]: `%${keyword}%` },
+              createdAt: { [Op.like]: `%${keyword}%` },
             },
           ],
         };

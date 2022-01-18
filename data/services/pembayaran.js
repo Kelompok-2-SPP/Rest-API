@@ -29,6 +29,12 @@ async function getPembayaran(keyword, size, page) {
             {
               jumlah_bayar: { [Op.like]: `%${keyword}%` },
             },
+            {
+              updatedAt: { [Op.like]: `%${keyword}%` },
+            },
+            {
+              createdAt: { [Op.like]: `%${keyword}%` },
+            },
           ],
         };
 
