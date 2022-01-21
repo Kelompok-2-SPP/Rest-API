@@ -100,7 +100,7 @@ async function getPembayaranbyId(idPembayaran) {
   if (!Number.isNaN(Number.parseInt(idPembayaran))) {
     // Return with findone
     return await pembayaran
-      .findByPk({ where: { id_pembayaran: idPembayaran } })
+      .findByPk(idPembayaran)
       .then((data) => {
         if (data) {
           return data;
