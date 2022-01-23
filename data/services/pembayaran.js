@@ -1,7 +1,7 @@
 const sequelize = require("sequelize");
 const models = require("../models");
 const { errorHandling } = require("../../domain/const");
-const { Paged, verifyDate } = require("../../domain/utils");
+const { Paged, verifyDate, parseDate } = require("../../domain/utils");
 
 const Op = sequelize.Op;
 
@@ -124,13 +124,13 @@ async function insPembayaran(idPetugas, nisn, tglDibayar, idSpp, jumlahBayar) {
     !Number.isNaN(Number.parseInt(idSpp)) &&
     !Number.isNaN(Number.parseInt(jumlahBayar))
   ) {
-    const date = new Date(tglDibayar);
+    const date = parseDate(tglDibayar);
     const data = {
       id_petugas: idPetugas,
       nisn: nisn,
-      tgl_dibayar: tglDibayar,
-      bulan_dibayar: date.getMonth,
-      tahun_dibayar: date.getFullYear,
+      tgl_dibayar: date.date,
+      bulan_dibayar: date.month,
+      tahun_dibayar: date.year,
       id_spp: idSpp,
       jumlah_bayar: jumlahBayar,
     };
@@ -162,8 +162,14 @@ async function putPembayaran(idPembayaran, body) {
       if (regex.test(key) && Number.isNaN(body[key])) {
         return errorHandling.BAD_REQ;
       }
-      if (key == "tgl_dibayar" && verifyDate(body[key])) {
+      if (key == "tgl_dibayar" && !verifyDate(body[key])) {
         return errorHandling.BAD_REQ;
+      } else if (key == "tgl_dibayar" && verifyDate(body[key])) {
+        const date = parseDate(body[key]);
+        data[key] = date.date;
+        data["bulan_dibayar"] = date.month;
+        data["tahun_dibayar"] = date.year;
+        continue
       }
       data[key] = body[key];
     }

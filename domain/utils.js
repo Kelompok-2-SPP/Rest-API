@@ -112,30 +112,12 @@ authVerify = async (req, res, next) => {
 // Roles access
 accessLimit = (roles) => {
   return (req, res, next) => {
-    jwt.verify(token, secretKey.petugas, { complete: true }, (err, dcdToken) => {
-      if (err) {
-        res
-          .status(405)
-          .json(
-            new FixedResponse(
-              (code = res.statusCode),
-              (message =
-                "Unauthorized, You're not allowed to using this method")
-            )
-          );
-      } else {
-        let allowed = false;
-
-        // check role
-        for (x of roles) {
-          if (x == dcdToken.payload.level) {
-            allowed = true;
-          }
-        }
-
-        if (allowed) {
-          next();
-        } else {
+    jwt.verify(
+      token,
+      secretKey.petugas,
+      { complete: true },
+      (err, dcdToken) => {
+        if (err) {
           res
             .status(405)
             .json(
@@ -145,9 +127,32 @@ accessLimit = (roles) => {
                   "Unauthorized, You're not allowed to using this method")
               )
             );
+        } else {
+          let allowed = false;
+
+          // check role
+          for (x of roles) {
+            if (x == dcdToken.payload.level) {
+              allowed = true;
+            }
+          }
+
+          if (allowed) {
+            next();
+          } else {
+            res
+              .status(405)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message =
+                    "Unauthorized, You're not allowed to using this method")
+                )
+              );
+          }
         }
       }
-    });
+    );
   };
 };
 
@@ -178,14 +183,30 @@ passDecrypt = async (type, password, hashed) => {
 };
 
 verifyDate = (date) => {
-  if (!/^\d\d\/\d\d\/\d\d\d\d$/.test(date)) {
+  const regex = new RegExp("/^\d{1,2}/\d{1,2}/\d{4}$/")
+  if (regex.test(date)) {
     return false;
   }
-  const [dd, mm, yyyy] = date.split("/").map((p) => parseInt(p));
-  parts[mm] -= 1;
-  const d = new Date(dd, mm, yyyy);
-  return d.getDate() === dd && d.getMonth() === mm && d.getFullYear() === yyyy;
+  const parts = date.split("/").map((p) => parseInt(p, 10));
+  parts[1] -= 1;
+  const d = new Date(parts[2], parts[1], parts[0]);
+  return (
+    d.getMonth() === parts[1] &&
+    d.getDate() === parts[0] &&
+    d.getFullYear() === parts[2]
+  );
 };
+
+parseDate = (date) => {
+  const parts = date.split("/").map((p) => parseInt(p, 10));
+  parts[1] -= 1;
+  const d = new Date(parts[2], parts[1], parts[0]);
+  return {
+    month: d.getMonth() + 1,
+    date: new Date(parts[2], parts[1], parts[0] + 1).toISOString().split("T")[0],
+    year: d.getFullYear()
+  }
+}
 
 module.exports = {
   Paged,
@@ -196,4 +217,5 @@ module.exports = {
   accessLimit,
   checkNull,
   verifyDate,
+  parseDate
 };
