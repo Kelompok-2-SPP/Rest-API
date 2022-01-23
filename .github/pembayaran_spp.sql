@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 22, 2021 at 10:38 AM
--- Server version: 10.4.21-MariaDB
--- PHP Version: 8.0.11
+-- Generation Time: Jan 23, 2022 at 05:00 AM
+-- Server version: 10.4.22-MariaDB
+-- PHP Version: 8.1.1
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -41,7 +41,7 @@ CREATE TABLE `kelas` (
 --
 
 INSERT INTO `kelas` (`id_kelas`, `nama_kelas`, `jurusan`, `angkatan`, `createdAt`, `updatedAt`) VALUES
-(1, 'XII RPL 3', 'RPL', 28, '2021-11-22 16:29:03', '2021-11-22 16:29:03');
+(1, 'XII RPL 1', 'RPL', 28, '2022-01-23 09:06:22', '2022-01-23 09:06:22');
 
 -- --------------------------------------------------------
 
@@ -67,7 +67,7 @@ CREATE TABLE `pembayaran` (
 --
 
 INSERT INTO `pembayaran` (`id_pembayaran`, `id_petugas`, `nisn`, `tgl_dibayar`, `bulan_dibayar`, `tahun_dibayar`, `id_spp`, `jumlah_bayar`, `createdAt`, `updatedAt`) VALUES
-(1, 1, '1', '2021-11-22', 11, 2021, 1, 500000, '2021-11-22 16:30:03', '2021-11-22 16:30:03');
+(1, 1, '1', '2022-02-11', 0, 2023, 1, 300000, '2022-01-23 10:45:25', '2022-01-23 10:45:25');
 
 -- --------------------------------------------------------
 
@@ -90,7 +90,7 @@ CREATE TABLE `petugas` (
 --
 
 INSERT INTO `petugas` (`id_petugas`, `username`, `password`, `nama_petugas`, `level`, `createdAt`, `updatedAt`) VALUES
-(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', 'admin', 'admin', '2021-11-22 16:31:05', '2021-11-22 16:31:05');
+(1, 'admin', '$2b$10$VAtpnNV7Ka/rGLVgxZV.f.SlwHEU51f/iKim4V6jD5gfCwx4bjaMW', 'admin', 'admin', '2022-01-23 09:00:06', '2022-01-23 09:00:06');
 
 -- --------------------------------------------------------
 
@@ -115,7 +115,7 @@ CREATE TABLE `siswa` (
 --
 
 INSERT INTO `siswa` (`nisn`, `nis`, `password`, `nama`, `id_kelas`, `alamat`, `no_telp`, `createdAt`, `updatedAt`) VALUES
-('1', 'NIS/1', '21232f297a57a5a743894a0e4a801fc3', 'admin', 1, 'Indonesia', '08445123512', '2021-11-22 16:31:35', '2021-11-22 16:31:35');
+('1', 'Nis/1', '$2b$10$foZlEcBu0upcqrhg5/Nd6.ldS59h/W3kra6ffrE14k3QMcDSH0h8C', 'admin', 1, 'Indonesia', '8123456789101', '2022-01-23 09:08:03', '2022-01-23 09:08:03');
 
 -- --------------------------------------------------------
 
@@ -137,7 +137,7 @@ CREATE TABLE `spp` (
 --
 
 INSERT INTO `spp` (`id_spp`, `angkatan`, `tahun`, `nominal`, `createdAt`, `updatedAt`) VALUES
-(1, 28, 2021, 500000, '2021-11-22 16:31:59', '2021-11-22 16:31:59');
+(1, 28, 2022, 500000, '2022-01-23 09:09:45', '2022-01-23 09:09:45');
 
 --
 -- Indexes for dumped tables
@@ -216,15 +216,15 @@ ALTER TABLE `spp`
 -- Constraints for table `pembayaran`
 --
 ALTER TABLE `pembayaran`
-  ADD CONSTRAINT `pembayaran_ibfk_1` FOREIGN KEY (`id_petugas`) REFERENCES `petugas` (`id_petugas`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `pembayaran_ibfk_2` FOREIGN KEY (`nisn`) REFERENCES `siswa` (`nisn`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `pembayaran_ibfk_3` FOREIGN KEY (`id_spp`) REFERENCES `spp` (`id_spp`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `pembayaran_ibfk_5` FOREIGN KEY (`nisn`) REFERENCES `siswa` (`nisn`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `pembayaran_ibfk_6` FOREIGN KEY (`id_petugas`) REFERENCES `petugas` (`id_petugas`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `pembayaran_ibfk_7` FOREIGN KEY (`id_spp`) REFERENCES `spp` (`id_spp`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `siswa`
 --
 ALTER TABLE `siswa`
-  ADD CONSTRAINT `siswa_ibfk_1` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `siswa_ibfk_1` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
