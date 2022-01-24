@@ -9,6 +9,7 @@ const pembayaran = models.pembayaran;
 const petugas = models.petugas;
 const siswa = models.siswa;
 const spp = models.spp;
+const kelas = models.kelas;
 
 async function getPembayaran(keyword, size, page) {
   // Initiate like opertaor
@@ -70,7 +71,8 @@ async function getPembayaran(keyword, size, page) {
         {
           model: siswa,
           as: "siswa",
-          attributes: { exclude: ["password"] },
+          attributes: { exclude: ["password", "id_kelas"] },
+          include: ["kelas", { model: kelas, as: "kelas" }],
         },
         "spp",
         {
@@ -100,7 +102,29 @@ async function getPembayaranbyId(idPembayaran) {
   if (!Number.isNaN(Number.parseInt(idPembayaran))) {
     // Return with findone
     return await pembayaran
-      .findByPk(idPembayaran)
+      .findByPk(idPembayaran, {
+        attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+        include: [
+          "petugas",
+          {
+            model: petugas,
+            as: "petugas",
+            attributes: { exclude: ["password"] },
+          },
+          "siswa",
+          {
+            model: siswa,
+            as: "siswa",
+            attributes: { exclude: ["password", "id_kelas"] },
+            include: ["kelas", { model: kelas, as: "kelas" }],
+          },
+          "spp",
+          {
+            model: spp,
+            as: "spp",
+          },
+        ],
+      })
       .then((data) => {
         if (data) {
           return data;
@@ -169,7 +193,7 @@ async function putPembayaran(idPembayaran, body) {
         data[key] = date.date;
         data["bulan_dibayar"] = date.month;
         data["tahun_dibayar"] = date.year;
-        continue
+        continue;
       }
       data[key] = body[key];
     }

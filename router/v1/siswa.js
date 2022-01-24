@@ -6,6 +6,7 @@ const app = express();
 
 const Op = sequelize.Op;
 const siswa = models.siswa;
+const kelas = models.kelas
 
 app.use(authVerify);
 app.use(express.json());
@@ -39,6 +40,13 @@ app.get("/", async (req, res) => {
       where: data,
       order: [["nama", "ASC"]],
       attributes: { exclude: ["password"] },
+      include: [
+        "kelas",
+        {
+          model: kelas,
+          as: "kelas",
+        },
+      ],
     })
     .then((siswa) => {
       if (siswa.length > 0) {

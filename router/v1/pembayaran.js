@@ -9,6 +9,7 @@ const pembayaran = models.pembayaran;
 const siswa = models.siswa;
 const petugas = models.petugas;
 const spp = models.spp;
+const kelas = models.kelas;
 
 app.use(authVerify);
 app.use(express.json());
@@ -55,6 +56,7 @@ app.get("/", async (req, res) => {
           model: siswa,
           as: "siswa",
           attributes: { exclude: ["password"] },
+          include: ["kelas", { model: kelas, as: "kelas" }],
         },
         "spp",
         {

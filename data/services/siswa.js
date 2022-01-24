@@ -5,6 +5,7 @@ const { Paged, passEncrypt } = require("../../domain/utils");
 
 const Op = sequelize.Op;
 const siswa = models.siswa;
+const kelas = models.kelas;
 
 async function getSiswa(keyword, size, page) {
   // Initiate like opertaor
@@ -51,7 +52,8 @@ async function getSiswa(keyword, size, page) {
       limit: sized,
       offset: paged * sized,
       where: data,
-      attributes: { exclude: ["password"] },
+      attributes: { exclude: ["password", "id_kelas"] },
+      include: ["kelas", { model: kelas, as: "kelas" }],
       order: [["nama", "ASC"]],
     })
     .then(async (data) => {
@@ -92,7 +94,10 @@ async function getSiswabyIdAuth(nisn) {
 async function getSiswabyId(nisn) {
   if (nisn) {
     return await siswa
-      .findByPk(nisn, { attributes: { exclude: ["password"] } })
+      .findByPk(nisn, {
+        attributes: { exclude: ["password", "id_kelas"] },
+        include: ["kelas", { model: kelas, as: "kelas" }],
+      })
       .then((data) => {
         if (data) {
           return data;
