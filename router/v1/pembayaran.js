@@ -111,12 +111,45 @@ app.post("/", accessLimit(["petugas", "admin"]), async (req, res) => {
     } = req.body);
     await pembayaran
       .create(data)
-      .then((result) => {
-        res.status(201).json({
-          status: res.statusCode,
-          message: "Data has been inserted",
-          details: result,
-        });
+      .then(async (result) => {
+        await pembayaran
+          .findOne({
+            where: { id_pembayaran: result.id_pembayaran },
+            include: [
+              "petugas",
+              {
+                model: petugas,
+                as: "petugas",
+                attributes: { exclude: ["password"] },
+              },
+              "siswa",
+              {
+                model: siswa,
+                as: "siswa",
+                attributes: { exclude: ["password"] },
+                include: ["kelas", { model: kelas, as: "kelas" }],
+              },
+              "spp",
+              {
+                model: spp,
+                as: "spp",
+              },
+            ],
+          })
+          .then((result) => {
+            res.status(201).json({
+              status: res.statusCode,
+              message: "Data has been inserted",
+              details: result,
+            });
+          })
+          .catch((error) => {
+            res.status(500).json({
+              status: res.statusCode,
+              message: "Something went wrong on server side, " + error.message,
+              details: null,
+            });
+          });
       })
       .catch((error) => {
         res.status(500).json({
@@ -146,7 +179,29 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
       .then(async (scss) => {
         if (scss[0]) {
           await pembayaran
-            .findOne({ where: { id_pembayaran: data.id_pembayaran } })
+            .findOne({
+              where: { id_pembayaran: data.id_pembayaran },
+              include: [
+                "petugas",
+                {
+                  model: petugas,
+                  as: "petugas",
+                  attributes: { exclude: ["password"] },
+                },
+                "siswa",
+                {
+                  model: siswa,
+                  as: "siswa",
+                  attributes: { exclude: ["password"] },
+                  include: ["kelas", { model: kelas, as: "kelas" }],
+                },
+                "spp",
+                {
+                  model: spp,
+                  as: "spp",
+                },
+              ],
+            })
             .then((resu) => {
               res.status(200).json({
                 status: res.statusCode,
@@ -190,7 +245,29 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
 app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_pembayaran) {
     await pembayaran
-      .findOne({ where: { id_pembayaran: req.query.id_pembayaran } })
+      .findOne({
+        where: { id_pembayaran: req.query.id_pembayaran },
+        include: [
+          "petugas",
+          {
+            model: petugas,
+            as: "petugas",
+            attributes: { exclude: ["password"] },
+          },
+          "siswa",
+          {
+            model: siswa,
+            as: "siswa",
+            attributes: { exclude: ["password"] },
+            include: ["kelas", { model: kelas, as: "kelas" }],
+          },
+          "spp",
+          {
+            model: spp,
+            as: "spp",
+          },
+        ],
+      })
       .then(async (resu) => {
         if (resu) {
           await pembayaran

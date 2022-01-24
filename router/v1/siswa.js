@@ -6,7 +6,7 @@ const app = express();
 
 const Op = sequelize.Op;
 const siswa = models.siswa;
-const kelas = models.kelas
+const kelas = models.kelas;
 
 app.use(authVerify);
 app.use(express.json());
@@ -101,13 +101,34 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
         if (!duplicate) {
           await siswa
             .create(data)
-            .then((result) => {
-              delete result.dataValues.password;
-              res.status(201).json({
-                status: res.statusCode,
-                message: "Data has been inserted",
-                data: result,
-              });
+            .then(async (result) => {
+              await siswa
+                .findOne({
+                  where: { nisn: nisn },
+                  attributes: { exclude: ["password"] },
+                  include: [
+                    "kelas",
+                    {
+                      model: kelas,
+                      as: "kelas",
+                    },
+                  ],
+                })
+                .then((result) => {
+                  res.status(201).json({
+                    status: res.statusCode,
+                    message: "Data has been inserted",
+                    data: result,
+                  });
+                })
+                .catch((error) => {
+                  res.status(500).json({
+                    status: res.statusCode,
+                    message:
+                      "Something went wrong on server side, " + error.message,
+                    details: null,
+                  });
+                });
             })
             .catch((error) => {
               res.status(500).json({
@@ -224,9 +245,20 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         .then(async (scss) => {
           if (scss[0]) {
             await siswa
-              .findOne({ where: { nisn: data.nisn } })
+              .findOne({
+                where: {
+                  nisn: data.nisn,
+                },
+                include: [
+                  "kelas",
+                  {
+                    model: kelas,
+                    as: "kelas",
+                  },
+                ],
+                attributes: { exclude: ["password"] },
+              })
               .then((resu) => {
-                delete resu.dataValues.password;
                 res.status(200).json({
                   status: res.statusCode,
                   message: "Data succesfully updated",
@@ -276,10 +308,19 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
 app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.nisn) {
     await siswa
-      .findOne({ where: { nisn: req.query.nisn } })
+      .findOne({
+        where: { nisn: req.query.nisn },
+        include: [
+          "kelas",
+          {
+            model: kelas,
+            as: "kelas",
+          },
+        ],
+        attributes: { exclude: ["password"] },
+      })
       .then(async (resu) => {
         if (resu) {
-          delete resu.dataValues.password;
           await siswa
             .destroy({ where: { nisn: req.query.nisn } })
             .then(

@@ -161,8 +161,37 @@ async function insPembayaran(idPetugas, nisn, tglDibayar, idSpp, jumlahBayar) {
 
     return await pembayaran
       .create(data)
-      .then((data) => {
-        return data;
+      .then(async (data) => {
+        return await pembayaran
+          .findByPk(data.id_pembayaran, {
+            attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+            include: [
+              "petugas",
+              {
+                model: petugas,
+                as: "petugas",
+                attributes: { exclude: ["password"] },
+              },
+              "siswa",
+              {
+                model: siswa,
+                as: "siswa",
+                attributes: { exclude: ["password", "id_kelas"] },
+                include: ["kelas", { model: kelas, as: "kelas" }],
+              },
+              "spp",
+              {
+                model: spp,
+                as: "spp",
+              },
+            ],
+          })
+          .then((datas) => {
+            return datas;
+          })
+          .catch((err) => {
+            throw err;
+          });
       })
       .catch((err) => {
         if (err.name == "SequelizeForeignKeyConstraintError") {
@@ -201,7 +230,29 @@ async function putPembayaran(idPembayaran, body) {
       .update(data, { where: { id_pembayaran: idPembayaran } })
       .then(async () => {
         return await pembayaran
-          .findByPk(idPembayaran)
+          .findByPk(idPembayaran, {
+            attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+            include: [
+              "petugas",
+              {
+                model: petugas,
+                as: "petugas",
+                attributes: { exclude: ["password"] },
+              },
+              "siswa",
+              {
+                model: siswa,
+                as: "siswa",
+                attributes: { exclude: ["password", "id_kelas"] },
+                include: ["kelas", { model: kelas, as: "kelas" }],
+              },
+              "spp",
+              {
+                model: spp,
+                as: "spp",
+              },
+            ],
+          })
           .then((find) => {
             if (find) {
               return find;
@@ -228,7 +279,29 @@ async function putPembayaran(idPembayaran, body) {
 async function delPembayaran(idPembayaran) {
   if (!Number.isNaN(idPembayaran)) {
     return await pembayaran
-      .findByPk(idPembayaran)
+      .findByPk(idPembayaran, {
+        attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+        include: [
+          "petugas",
+          {
+            model: petugas,
+            as: "petugas",
+            attributes: { exclude: ["password"] },
+          },
+          "siswa",
+          {
+            model: siswa,
+            as: "siswa",
+            attributes: { exclude: ["password", "id_kelas"] },
+            include: ["kelas", { model: kelas, as: "kelas" }],
+          },
+          "spp",
+          {
+            model: spp,
+            as: "spp",
+          },
+        ],
+      })
       .then(async (data) => {
         if (data) {
           await pembayaran

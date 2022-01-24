@@ -160,9 +160,11 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
         .then(async (scss) => {
           if (scss[0]) {
             await petugas
-              .findOne({ where: { id_petugas: data.id_petugas } })
+              .findOne({
+                where: { id_petugas: data.id_petugas },
+                attributes: { exclude: ["password"] },
+              })
               .then((resu) => {
-                delete resu.dataValues.password;
                 res.status(200).json({
                   status: res.statusCode,
                   message: "Data succesfully updated",
@@ -212,10 +214,12 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
 app.delete("/", accessLimit(["admin"]), async (req, res) => {
   if (req.query.id_petugas) {
     await petugas
-      .findOne({ where: { id_petugas: req.query.id_petugas } })
+      .findOne({
+        where: { id_petugas: req.query.id_petugas },
+        attributes: { exclude: ["password"] },
+      })
       .then(async (resu) => {
         if (resu) {
-          delete resu.dataValues.password;
           await petugas
             .destroy({ where: { id_petugas: req.query.id_petugas } })
             .then(

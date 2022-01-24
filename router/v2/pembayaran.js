@@ -91,9 +91,9 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
           res.status(400).json(new FixedResponse(res.statusCode));
         } else if (data == errorHandling.INDEX_NOT_FOUND) {
           let msg = "";
-          msg += id_petugas ? "Id petugas " + id_petugas + ", " : "";
-          msg += nisn ? "Nisn " + nisn + ", " : "";
-          msg += id_spp ? "Id spp " + id_spp + ", " : "";
+          msg += id_petugas ? "Id petugas " + id_petugas + "or " : "";
+          msg += nisn ? "Nisn " + nisn + "or " : "";
+          msg += id_spp ? "Id spp " + id_spp + "or " : "";
           res
             .status(409)
             .json(
@@ -160,9 +160,9 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
           // Return data to user
         } else if (data == errorHandling.INDEX_NOT_FOUND) {
           let msg = "";
-          msg += id_petugas ? "Id petugas " + id_petugas + ", " : "";
-          msg += nisn ? "Nisn " + nisn + ", " : "";
-          msg += id_spp ? "Id spp " + id_spp + ", " : "";
+          msg += id_petugas ? "Id petugas " + id_petugas + "or " : "";
+          msg += nisn ? "Nisn " + nisn + "or " : "";
+          msg += id_spp ? "Id spp " + id_spp + "or " : "";
           res
             .status(409)
             .json(

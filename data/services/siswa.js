@@ -135,9 +135,18 @@ async function insSiswa(nisn, password, nis, nama, idKelas, alamat, noTelp) {
 
     return await siswa
       .create(data)
-      .then((data) => {
-        delete data.dataValues.password;
-        return data;
+      .then(async (data) => {
+        return await siswa
+          .findByPk(data.nisn, {
+            attributes: { exclude: ["password", "id_kelas"] },
+            include: ["kelas", { model: kelas, as: "kelas" }],
+          })
+          .then((datas) => {
+            return datas;
+          })
+          .catch((err) => {
+            throw err;
+          });
       })
       .catch((err) => {
         if (err.name == "SequelizeUniqueConstraintError") {
@@ -176,6 +185,7 @@ async function putSiswa(nisn, body) {
         return await siswa
           .findByPk(data.nisn ? data.nisn : nisn, {
             attributes: { exclude: ["password"] },
+            include: ["kelas", { model: kelas, as: "kelas" }],
           })
           .then((find) => {
             if (find) {
@@ -205,7 +215,10 @@ async function putSiswa(nisn, body) {
 async function delSiswa(nisn) {
   if (nisn) {
     return await siswa
-      .findByPk(nisn, { attributes: { exclude: ["password"] } })
+      .findByPk(nisn, {
+        attributes: { exclude: ["password"] },
+        include: ["kelas", { model: kelas, as: "kelas" }],
+      })
       .then(async (data) => {
         if (data) {
           await siswa.destroy({ where: { nisn: nisn } }).catch((err) => {
