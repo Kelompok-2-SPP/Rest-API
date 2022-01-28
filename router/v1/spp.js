@@ -149,7 +149,7 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
       .then(async (resu) => {
         if (resu) {
           await spp
-            .destroy({ where: { id_spp: req.body.id_spp } })
+            .destroy({ where: { id_spp: req.query.id_spp } })
             .then(
               res.status(200).json({
                 status: res.statusCode,

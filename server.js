@@ -6,7 +6,7 @@ const port = process.env.PORT || 8000;
 app.use(cors());
 
 // API V.1.0
-const routerv1 = require("./router/v1")
+const routerv1 = require("./router/v1");
 
 app.use("/api/v1/auth", routerv1.auth);
 app.use("/api/v1/spp", routerv1.spp);
@@ -26,7 +26,7 @@ app.use("/api/v2/petugas", routerV2.petugas);
 app.use("/api/v2/pembayaran", routerV2.pembayaran);
 
 // NOT FOUND FALLBACK TO DOCUMENTATION
-app.use(function(req, res) {
+app.use(function (req, res) {
   res.redirect("https://documenter.getpostman.com/view/19193294/UVXkpb1a");
 });
 

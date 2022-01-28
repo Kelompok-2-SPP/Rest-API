@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { secretKey } = require("./const");
+const moment = require("moment");
+const { secretKey, dbConfig } = require("./const");
 
 // Initiate token as null
 let token = null;
@@ -183,29 +184,26 @@ passDecrypt = async (type, password, hashed) => {
 };
 
 verifyDate = (date) => {
-  const regex = new RegExp("/^\d{1,2}/\d{1,2}/\d{4}$/")
-  if (regex.test(date)) {
-    return false;
-  }
-  const parts = date.split("/").map((p) => parseInt(p, 10));
-  parts[1] -= 1;
-  const d = new Date(parts[2], parts[1], parts[0]);
   return (
-    d.getMonth() === parts[1] &&
-    d.getDate() === parts[0] &&
-    d.getFullYear() === parts[2]
+    moment(date, "DD/MM/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
+    moment(date, "D/MM/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
+    moment(date, "DD/M/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
+    moment(date, "D/M/YYYY", true).utcOffset(dbConfig.timezone).isValid()
   );
 };
 
 parseDate = (date) => {
-  const parts = date.split("/").map((p) => parseInt(p, 10));
-  parts[1] -= 1;
-  const d = new Date(parts[2], parts[1], parts[0]);
+  const dat = moment(date, "DD/MM/YYYY").utcOffset(dbConfig.timezone);
   return {
-    month: d.getMonth() + 1,
-    date: new Date(parts[2], parts[1], parts[0] + 1).toISOString().split("T")[0],
-    year: d.getFullYear()
-  }
+    date: dat.format(),
+    month: dat.month() + 1,
+    year: dat.year(),
+  };
+};
+
+passedMonth = (date) => {
+  const now = moment.utcOffset(dbConfig.timezone).now()
+  
 }
 
 module.exports = {
@@ -217,5 +215,5 @@ module.exports = {
   accessLimit,
   checkNull,
   verifyDate,
-  parseDate
+  parseDate,
 };
