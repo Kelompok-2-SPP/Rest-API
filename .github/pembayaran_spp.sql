@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 23, 2022 at 05:00 AM
+-- Generation Time: Feb 04, 2022 at 05:13 AM
 -- Server version: 10.4.22-MariaDB
--- PHP Version: 8.1.1
+-- PHP Version: 8.1.2
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -53,10 +53,10 @@ CREATE TABLE `pembayaran` (
   `id_pembayaran` int(11) NOT NULL,
   `id_petugas` int(11) DEFAULT NULL,
   `nisn` char(10) CHARACTER SET utf8mb4 DEFAULT NULL,
-  `tgl_dibayar` date DEFAULT NULL,
-  `bulan_dibayar` int(2) DEFAULT NULL,
-  `tahun_dibayar` int(4) DEFAULT NULL,
+  `tgl_bayar` date DEFAULT NULL,
   `id_spp` int(11) DEFAULT NULL,
+  `bulan_spp` int(2) DEFAULT NULL,
+  `tahun_spp` int(4) DEFAULT NULL,
   `jumlah_bayar` int(11) DEFAULT NULL,
   `createdAt` datetime DEFAULT NULL,
   `updatedAt` datetime DEFAULT NULL
@@ -66,8 +66,15 @@ CREATE TABLE `pembayaran` (
 -- Dumping data for table `pembayaran`
 --
 
-INSERT INTO `pembayaran` (`id_pembayaran`, `id_petugas`, `nisn`, `tgl_dibayar`, `bulan_dibayar`, `tahun_dibayar`, `id_spp`, `jumlah_bayar`, `createdAt`, `updatedAt`) VALUES
-(1, 1, '1', '2022-02-11', 0, 2023, 1, 300000, '2022-01-23 10:45:25', '2022-01-23 10:45:25');
+INSERT INTO `pembayaran` (`id_pembayaran`, `id_petugas`, `nisn`, `tgl_bayar`, `id_spp`, `bulan_spp`, `tahun_spp`, `jumlah_bayar`, `createdAt`, `updatedAt`) VALUES
+(1, NULL, '1', NULL, 1, 7, 2021, NULL, '2022-01-31 10:52:22', '2022-01-31 10:52:22'),
+(2, NULL, '1', NULL, 1, 8, 2021, NULL, '2022-01-31 10:52:22', '2022-01-31 10:52:22'),
+(3, NULL, '1', NULL, 1, 9, 2021, NULL, '2022-01-31 10:52:22', '2022-01-31 10:52:22'),
+(4, NULL, '1', NULL, 1, 10, 2021, NULL, '2022-01-31 10:52:22', '2022-01-31 10:52:22'),
+(5, NULL, '1', NULL, 1, 11, 2021, NULL, '2022-01-31 10:52:22', '2022-01-31 10:52:22'),
+(6, NULL, '1', NULL, 1, 12, 2021, NULL, '2022-01-31 11:01:12', '2022-01-31 11:01:12'),
+(7, NULL, '1', NULL, 1, 1, 2022, NULL, '2022-01-31 11:01:12', '2022-01-31 11:01:12'),
+(8, NULL, '1', NULL, 1, 2, 2022, NULL, '2022-02-03 07:30:58', '2022-02-03 07:30:58');
 
 -- --------------------------------------------------------
 
@@ -80,7 +87,7 @@ CREATE TABLE `petugas` (
   `username` varchar(25) CHARACTER SET utf8mb4 NOT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL,
   `nama_petugas` varchar(35) CHARACTER SET utf8mb4 DEFAULT NULL,
-  `level` enum('petugas','admin') CHARACTER SET utf8mb4 NOT NULL DEFAULT 'petugas',
+  `level` enum('petugas','admin') CHARACTER SET utf8mb4 DEFAULT NULL,
   `createdAt` datetime DEFAULT NULL,
   `updatedAt` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -115,7 +122,7 @@ CREATE TABLE `siswa` (
 --
 
 INSERT INTO `siswa` (`nisn`, `nis`, `password`, `nama`, `id_kelas`, `alamat`, `no_telp`, `createdAt`, `updatedAt`) VALUES
-('1', 'Nis/1', '$2b$10$foZlEcBu0upcqrhg5/Nd6.ldS59h/W3kra6ffrE14k3QMcDSH0h8C', 'admin', 1, 'Indonesia', '8123456789101', '2022-01-23 09:08:03', '2022-01-23 09:08:03');
+('1', 'Nis/1', '$2b$10$foZlEcBu0upcqrhg5/Nd6.ldS59h/W3kra6ffrE14k3QMcDSH0h8C', 'admin', 1, 'Indonesia', '0812345678910', '2022-01-23 09:08:03', '2022-01-23 09:08:03');
 
 -- --------------------------------------------------------
 
@@ -137,7 +144,7 @@ CREATE TABLE `spp` (
 --
 
 INSERT INTO `spp` (`id_spp`, `angkatan`, `tahun`, `nominal`, `createdAt`, `updatedAt`) VALUES
-(1, 28, 2022, 500000, '2022-01-23 09:09:45', '2022-01-23 09:09:45');
+(1, 28, 2021, 400000, '2022-01-23 09:09:45', '2022-01-23 09:09:45');
 
 --
 -- Indexes for dumped tables
@@ -194,7 +201,7 @@ ALTER TABLE `kelas`
 -- AUTO_INCREMENT for table `pembayaran`
 --
 ALTER TABLE `pembayaran`
-  MODIFY `id_pembayaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_pembayaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `petugas`
@@ -206,7 +213,7 @@ ALTER TABLE `petugas`
 -- AUTO_INCREMENT for table `spp`
 --
 ALTER TABLE `spp`
-  MODIFY `id_spp` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_spp` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
