@@ -35,13 +35,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       id_petugas: DataTypes.INTEGER,
       nisn: DataTypes.STRING,
-      tgl_dibayar: {
+      tgl_bayar: {
         type: DataTypes.DATE,
         defaultValue: sequelize.NOW,
       },
-      bulan_dibayar: DataTypes.INTEGER,
-      tahun_dibayar: DataTypes.INTEGER,
       id_spp: DataTypes.INTEGER,
+      bulan_spp: DataTypes.INTEGER,
+      tahun_spp: DataTypes.INTEGER,
       jumlah_bayar: DataTypes.INTEGER,
     },
     {

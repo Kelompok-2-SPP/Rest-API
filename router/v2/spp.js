@@ -6,7 +6,7 @@ const {
   accessLimit,
   checkNull,
 } = require("../../domain/utils");
-const { errorHandling } = require("../../domain/const");
+const { errorHandling, roles } = require("../../domain/const");
 
 const app = express();
 const spp = services.spp;
@@ -26,22 +26,25 @@ app.get("/", async (req, res) => {
     await spp
       .getSppbyId(id_spp)
       .then((data) => {
-        // Check data is found or not
-        if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse((code = res.statusCode)));
+        switch (data) {
+          // Check data is found or not
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse((code = res.statusCode)));
+            break;
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
           // Return data to user
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = ""),
-                (details = data)
-              )
-            );
+          default:
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = ""),
+                  (details = data)
+                )
+              );
         }
         // Throw if have server error
       })
@@ -76,16 +79,57 @@ app.get("/", async (req, res) => {
   }
 });
 
+// -- GET LATEST-SPP
+app.get("/latest", async (req, res) => {
+  // Fetch data from query params
+  const { nisn, year } = req.query;
+
+  if (nisn) {
+    await spp.getLatestSpp(nisn, year).then((data) => {
+      switch (data) {
+        case errorHandling.BAD_REQ:
+          res.status(400).json(new FixedResponse(res.statusCode));
+          break;
+        case errorHandling.NOT_FOUND:
+          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          break;
+        default:
+          res
+            .status(200)
+            .json(
+              new FixedResponse(
+                (code = res.statusCode),
+                (message = ""),
+                (details = data)
+              )
+            );
+      }
+    });
+  } else {
+    res.status(422).json(
+      new FixedResponse(
+        (code = res.statusCode),
+        (message =
+          "Required query params is missing !" +
+          (await checkNull({
+            nisn,
+            year,
+          })))
+      )
+    );
+  }
+});
+
 // -- POST
-app.post("/", accessLimit(["admin"]), async (req, res) => {
+app.post("/", accessLimit([roles.admin]), async (req, res) => {
   // Fetch data from body
-  const { tahun, nominal, angkatan } = req.body;
+  const { angkatan, tahun, nominal } = req.body;
 
   // Check if have required body
-  if (tahun && nominal && angkatan) {
+  if (angkatan && tahun && nominal) {
     // Call services insertSpp
     await spp
-      .insSpp(tahun, nominal, angkatan)
+      .insSpp(angkatan, tahun, nominal)
       .then((data) => {
         if (data == errorHandling.BAD_REQ) {
           res.status(400).json(new FixedResponse(res.statusCode));
@@ -114,16 +158,16 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
         (message =
           "Required body is missing !" +
           (await checkNull({
+            angakatan,
             tahun,
             nominal,
-            angkatan,
           })))
       )
     );
   }
 });
 
-app.put("/", accessLimit(["admin"]), async (req, res) => {
+app.put("/", accessLimit([roles.admin]), async (req, res) => {
   // Fetch data from body
   const { id_spp } = req.query;
 
@@ -133,23 +177,26 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
     await spp
       .putSpp(id_spp, req.body)
       .then((data) => {
-        // Check if bad req or not
-        if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
+        switch (data) {
+          // Check if bad req or not
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
           // Check if data not found
-        } else if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse((code = res.statusCode)));
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse((code = res.statusCode)));
+            break;
           // Return data to user
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Data sucessfuly updated"),
-                (details = data)
-              )
-            );
+          default:
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = "Data sucessfuly updated"),
+                  (details = data)
+                )
+              );
         }
         // Throw if have server error
       })
@@ -170,7 +217,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
   }
 });
 
-app.delete("/", accessLimit(["admin"]), async (req, res) => {
+app.delete("/", accessLimit([roles.admin]), async (req, res) => {
   // Ftech data from query
   const { id_spp } = req.query;
 
@@ -180,23 +227,25 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
     await spp
       .delSpp(id_spp)
       .then((data) => {
-        // Check if data is found or not
-        if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse((code = res.statusCode)));
+        switch (data) {
+          // Check if data is found or not
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse((code = res.statusCode)));
+            break;
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
           // Return data to user
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-          // Check if data not found
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Data sucessfuly deleted"),
-                (details = data)
-              )
-            );
+          default:
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = "Data sucessfuly deleted"),
+                  (details = data)
+                )
+              );
         }
       })
       .catch((err) => {

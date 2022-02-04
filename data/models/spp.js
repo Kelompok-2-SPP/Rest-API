@@ -23,9 +23,9 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         autoIncrement: true,
       },
+      angkatan: DataTypes.INTEGER,
       tahun: DataTypes.INTEGER,
       nominal: DataTypes.INTEGER,
-      angkatan: DataTypes.INTEGER,
     },
     {
       sequelize,

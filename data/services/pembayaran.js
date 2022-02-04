@@ -1,7 +1,7 @@
 const sequelize = require("sequelize");
 const models = require("../models");
 const { errorHandling } = require("../../domain/const");
-const { Paged, verifyDate, parseDate } = require("../../domain/utils");
+const { Paged, verifyDate, formatDate } = require("../../domain/utils");
 
 const Op = sequelize.Op;
 
@@ -19,13 +19,13 @@ async function getPembayaran(keyword, size, page) {
       : {
           [Op.or]: [
             {
-              tgl_dibayar: { [Op.like]: `%${keyword}%` },
+              tgl_bayar: { [Op.like]: `%${keyword}%` },
             },
             {
-              bulan_dibayar: { [Op.like]: `%${keyword}%` },
+              bulan_spp: { [Op.like]: `%${keyword}%` },
             },
             {
-              tahun_dibayar: { [Op.like]: `%${keyword}%` },
+              tahun_spp: { [Op.like]: `%${keyword}%` },
             },
             {
               jumlah_bayar: { [Op.like]: `%${keyword}%` },
@@ -80,7 +80,7 @@ async function getPembayaran(keyword, size, page) {
           as: "spp",
         },
       ],
-      order: [["updatedAt", "ASC"]],
+      order: [["updatedAt", "DESC"]],
     })
     .then((data) => {
       if (data.count > 0) {
@@ -140,22 +140,31 @@ async function getPembayaranbyId(idPembayaran) {
   }
 }
 
-async function insPembayaran(idPetugas, nisn, tglDibayar, idSpp, jumlahBayar) {
+async function insPembayaran(
+  idPetugas,
+  nisn,
+  tglBayar,
+  idSpp,
+  bulanSpp,
+  tahunSpp,
+  jumlahBayar
+) {
   if (
     !Number.isNaN(Number.parseInt(idPetugas)) &&
     nisn &&
-    verifyDate(tglDibayar) &&
+    verifyDate(tglDibayar).fullDate &&
+    verifyMonth(bulanDibayar).month &&
+    verifyYear(tahunDibayar).year &&
     !Number.isNaN(Number.parseInt(idSpp)) &&
     !Number.isNaN(Number.parseInt(jumlahBayar))
   ) {
-    const date = parseDate(tglDibayar);
     const data = {
       id_petugas: idPetugas,
       nisn: nisn,
-      tgl_dibayar: date.date,
-      bulan_dibayar: date.month,
-      tahun_dibayar: date.year,
+      tgl_bayar: formatDate(tglBayar).string,
       id_spp: idSpp,
+      bulan_spp: bulanSpp,
+      tahun_spp: tahunSpp,
       jumlah_bayar: jumlahBayar,
     };
 
@@ -212,16 +221,17 @@ async function putPembayaran(idPembayaran, body) {
     const regex = new RegExp("id_petugas|id_spp|jumlah_bayar");
 
     for (key in body) {
-      if (regex.test(key) && Number.isNaN(body[key])) {
+      if (
+        (regex.test(key) && Number.isNaN(body[key])) ||
+        (key == "tgl_bayar" && !verifyDate(body[key])).date ||
+        (key == "bulan_spp" && !verifyMonth(body[key])).month ||
+        (key == "tahun_spp" && !verifyYear(body[key])).year
+      ) {
         return errorHandling.BAD_REQ;
       }
-      if (key == "tgl_dibayar" && !verifyDate(body[key])) {
-        return errorHandling.BAD_REQ;
-      } else if (key == "tgl_dibayar" && verifyDate(body[key])) {
-        const date = parseDate(body[key]);
-        data[key] = date.date;
-        data["bulan_dibayar"] = date.month;
-        data["tahun_dibayar"] = date.year;
+
+      if (key == "tgl_bayar" && verifyDate(body[key])) {
+        data[key] = formatDate(body[key]).string;
         continue;
       }
       data[key] = body[key];

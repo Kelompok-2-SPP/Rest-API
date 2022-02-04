@@ -1,7 +1,9 @@
 const express = require("express");
 const sequelize = require("sequelize");
 const models = require("../../data/models/index");
+const services = require("../../data/services");
 const { authVerify, accessLimit } = require("../../domain/utils");
+const { errorHandling } = require("../../domain/const");
 const app = express();
 
 const Op = sequelize.Op;
@@ -10,6 +12,7 @@ const siswa = models.siswa;
 const petugas = models.petugas;
 const spp = models.spp;
 const kelas = models.kelas;
+const tunggakan = services.tunggakan;
 
 app.use(authVerify);
 app.use(express.json());
@@ -22,13 +25,13 @@ app.get("/", async (req, res) => {
     data = {
       [Op.or]: [
         {
-          tgl_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+          tgl_bayar: { [Op.like]: `%${req.query.keyword}%` },
         },
         {
-          bulan_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+          bulan_spp: { [Op.like]: `%${req.query.keyword}%` },
         },
         {
-          tahun_dibayar: { [Op.like]: `%${req.query.keyword}%` },
+          tahun_spp: { [Op.like]: `%${req.query.keyword}%` },
         },
         {
           jumlah_bayar: { [Op.like]: `%${req.query.keyword}%` },
@@ -64,7 +67,7 @@ app.get("/", async (req, res) => {
           as: "spp",
         },
       ],
-      order: [["createdAt", "ASC"]],
+      order: [["updatedAt", "DESC"]],
     })
     .then((pembayaran) => {
       if (pembayaran.length > 0) {
@@ -90,23 +93,53 @@ app.get("/", async (req, res) => {
     });
 });
 
+// -- GET TUNGGAKAN
+app.get("/tunggakan", async (req, res) => {
+  // Fetch data from query params
+  const { nisn } = req.query;
+
+  if (nisn) {
+    await tunggakan.calculateTunggakan(nisn).then((data) => {
+      if (data == errorHandling.BAD_REQ) {
+        res.status(400).json({
+          status: res.statusCode,
+          message: "Bad request, please read the documentation",
+          details: null,
+        });
+      } else {
+        res.status(200).json({
+          status: res.statusCode,
+          message: "",
+          details: data,
+        });
+      }
+    });
+  } else {
+    res.status(422).json({
+      status: res.statusCode,
+      message: "Required params is missing !, Needed params is nisn",
+      details: null,
+    });
+  }
+});
+
 app.post("/", accessLimit(["petugas", "admin"]), async (req, res) => {
   if (
     req.body.id_petugas &&
     req.body.nisn &&
-    req.body.tgl_dibayar &&
-    req.body.bulan_dibayar &&
-    req.body.tahun_dibayar &&
+    req.body.tgl_bayar &&
     req.body.id_spp &&
+    req.body.bulan_spp &&
+    req.body.tahun_spp &&
     req.body.jumlah_bayar
   ) {
     let data = ({
       id_petugas,
       nisn,
-      tgl_dibayar,
-      bulan_dibayar,
-      tahun_dibayar,
+      tgl_bayar,
       id_spp,
+      bulan_spp,
+      tahun_spp,
       jumlah_bayar,
     } = req.body);
     await pembayaran
@@ -162,7 +195,7 @@ app.post("/", accessLimit(["petugas", "admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message:
-        "Required body is missing !, Needed body is id_petugas, nisn, tgl_dibayar, bulan_dibayar, tahun_dibayar, id_spp, jumlah_bayar",
+        "Required body is missing !, Needed body is id_petugas, nisn, tgl_bayar, id_spp, bulan_spp, tahun_spp, jumlah_bayar",
       details: null,
     });
   }
@@ -236,7 +269,7 @@ app.put("/", accessLimit(["petugas", "admin"]), async (req, res) => {
     res.status(422).json({
       status: res.statusCode,
       message:
-        "Required body is missing !, Needed body is id_pembayaran, and id_petugas or nisn or tgl_dibayar or bulan_dibayar or tahun_dibayar or id_spp or jumlah_bayar",
+        "Required body is missing !, Needed body is id_pembayaran, and id_petugas or nisn or tgl_bayar or id_spp or bulan_bayar or tahun_bayar or jumlah_bayar",
       details: null,
     });
   }

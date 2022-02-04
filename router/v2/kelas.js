@@ -6,7 +6,7 @@ const {
   accessLimit,
   checkNull,
 } = require("../../domain/utils");
-const { errorHandling } = require("../../domain/const");
+const { errorHandling, roles } = require("../../domain/const");
 
 const app = express();
 const kelas = services.kelas;
@@ -27,21 +27,24 @@ app.get("/", async (req, res) => {
       .getKelasbyId(id_kelas)
       .then((data) => {
         // Check data is found or not
-        if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse(res.statusCode));
-          // Return data to user
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = ""),
-                (details = data)
-              )
-            );
+        switch (data) {
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse(res.statusCode));
+            break;
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
+          default:
+            // Return data to user
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = ""),
+                  (details = data)
+                )
+              );
         }
         // Throw if have server error
       })
@@ -77,7 +80,7 @@ app.get("/", async (req, res) => {
 });
 
 // -- POST
-app.post("/", accessLimit(["admin"]), async (req, res) => {
+app.post("/", accessLimit([roles.admin]), async (req, res) => {
   // Fetch data from body
   const { nama_kelas, jurusan, angkatan } = req.body;
 
@@ -88,31 +91,33 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
       .insKelas(nama_kelas, jurusan, angkatan)
       .then((data) => {
         // Check if double data or not
-        if (data == errorHandling.DOUBLE_DATA) {
-          res
-            .status(409)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message =
-                  "Nama kelas " +
-                  nama_kelas +
-                  " has been used, try different nama_kelas")
-              )
-            );
-          // Return data to user
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-        } else {
-          res
-            .status(201)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Data sucessfully inserted"),
-                (details = data)
-              )
-            );
+        switch (data) {
+          case errorHandling.DOUBLE_DATA:
+            res
+              .status(409)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message =
+                    "Nama kelas " +
+                    nama_kelas +
+                    " has been used, try different nama_kelas")
+                )
+              );
+            break;
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
+          default:
+            res
+              .status(201)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = "Data sucessfully inserted"),
+                  (details = data)
+                )
+              );
         }
         // Throw if have server error
       })
@@ -135,7 +140,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
 });
 
 // -- PUT
-app.put("/", accessLimit(["admin"]), async (req, res) => {
+app.put("/", accessLimit([roles.admin]), async (req, res) => {
   // Fetch data from body
   const { nama_kelas } = req.body;
   const { id_kelas } = req.query;
@@ -147,34 +152,38 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
       .putKelas(id_kelas, req.body)
       .then((data) => {
         // Check if double data or not
-        if (data == errorHandling.DOUBLE_DATA) {
-          res
-            .status(409)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message =
-                  "Nama kelas " +
-                  nama_kelas +
-                  " has been used, try different nama_kelas")
-              )
-            );
+        switch (data) {
+          case errorHandling.DOUBLE_DATA:
+            res
+              .status(409)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message =
+                    "Nama kelas " +
+                    nama_kelas +
+                    " has been used, try different nama_kelas")
+                )
+              );
+            break;
           // Check if data not found
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-        } else if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse(res.statusCode));
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse(res.statusCode));
+            break;
           // Return data to user
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Data sucessfuly updated"),
-                (details = data)
-              )
-            );
+          default:
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = "Data sucessfuly updated"),
+                  (details = data)
+                )
+              );
         }
         // Throw if have server error
       })
@@ -196,7 +205,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
 });
 
 // -- DELETE
-app.delete("/", accessLimit(["admin"]), async (req, res) => {
+app.delete("/", accessLimit([roles.admin]), async (req, res) => {
   // Ftech data from query
   const { id_kelas } = req.query;
 
@@ -206,22 +215,24 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
     await kelas
       .delKelas(id_kelas)
       .then((data) => {
-        // Check if data is found or not
-        if (data == errorHandling.NOT_FOUND) {
-          res.status(404).json(new FixedResponse(res.statusCode));
-          // Return data to user
-        } else if (data == errorHandling.BAD_REQ) {
-          res.status(400).json(new FixedResponse(res.statusCode));
-        } else {
-          res
-            .status(200)
-            .json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Data sucessfuly deleted"),
-                (details = data)
-              )
-            );
+        switch (data) {
+          // Check if data is found or not
+          case errorHandling.NOT_FOUND:
+            res.status(404).json(new FixedResponse(res.statusCode));
+            break;
+          case errorHandling.BAD_REQ:
+            res.status(400).json(new FixedResponse(res.statusCode));
+            break;
+          default:
+            res
+              .status(200)
+              .json(
+                new FixedResponse(
+                  (code = res.statusCode),
+                  (message = "Data sucessfuly deleted"),
+                  (details = data)
+                )
+              );
         }
       })
       .catch((err) => {

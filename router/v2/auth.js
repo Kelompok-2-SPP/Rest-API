@@ -1,7 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const services = require("../../data/services");
-const { secretKey, errorHandling } = require("../../domain/const");
+const { secretKey, errorHandling, roles } = require("../../domain/const");
 const { FixedResponse, passDecrypt, checkNull } = require("../../domain/utils");
 
 const app = express();
@@ -18,12 +18,12 @@ app.post("/", async (req, res) => {
   // Check if had username
   if (username && password) {
     await petugas
-      .getPetugasByUsername(username)
+      .getPetugasByUsernameAuth(username)
       .then(async (data) => {
         if (
           data != errorHandling.NOT_FOUND &&
           data != errorHandling.BAD_REQ &&
-          (await passDecrypt("petugas", password, data.password))
+          (await passDecrypt(roles.petugas, password, data.password))
         ) {
           res.status(200).json(
             new FixedResponse(

@@ -11,5 +11,5 @@ module.exports = {
   petugas,
   siswa,
   spp,
-  tunggakan
+  tunggakan,
 };

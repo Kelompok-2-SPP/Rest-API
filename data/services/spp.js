@@ -1,10 +1,12 @@
 const sequelize = require("sequelize");
 const models = require("../models");
 const { errorHandling } = require("../../domain/const");
-const { Paged } = require("../../domain/utils");
+const { Paged, verifyDate } = require("../../domain/utils");
 
 const Op = sequelize.Op;
 const spp = models.spp;
+const siswa = models.siswa;
+const kelas = models.kelas;
 
 async function getSpp(keyword, size, page) {
   // Initiate like opertaor
@@ -51,7 +53,7 @@ async function getSpp(keyword, size, page) {
       limit: sized,
       offset: paged * sized,
       where: data,
-      order: [["tahun", "ASC"]],
+      order: [["tahun", "DESC"]],
     })
     .then((data) => {
       if (data.count > 0) {
@@ -88,16 +90,60 @@ async function getSppbyId(idSpp) {
   }
 }
 
+async function getLatestSpp(nisn, year) {
+  if ((nisn, verifyDate(year).year)) {
+    return await siswa
+      .findByPk(nisn, {
+        attributes: ["nisn"],
+        include: [
+          "kelas",
+          { model: kelas, as: "kelas", attributes: ["angkatan"] },
+        ],
+      })
+      .then(async (siswa) => {
+        if (siswa) {
+          return await spp
+            .findOne({
+              where: {
+                angkatan: siswa.kelas.angkatan,
+                tahun: {
+                  [Op.lte]: year,
+                },
+              },
+              order: [["updatedAt", "DESC"]],
+            })
+            .then((data) => {
+              if (data) {
+                return data;
+              } else {
+                return errorHandling.NOT_FOUND;
+              }
+            })
+            .catch((err) => {
+              throw err;
+            });
+        } else {
+          return errorHandling.NOT_FOUND;
+        }
+      })
+      .catch((err) => {
+        throw err;
+      });
+  } else {
+    return errorHandling.BAD_REQ;
+  }
+}
+
 async function insSpp(tahun, nominal, angkatan) {
   if (
-    !Number.isNaN(Number.parseInt(tahun)) &&
-    !Number.isNaN(Number.parseInt(nominal)) &&
-    !Number.isNaN(Number.parseInt(angkatan))
+    !Number.isNaN(Number.parseInt(angkatan)) &&
+    verifyDate(tahun).year &&
+    !Number.isNaN(Number.parseInt(nominal))
   ) {
     const data = {
+      angkatan: angkatan,
       tahun: tahun,
       nominal: nominal,
-      angkatan: angkatan,
     };
 
     return await spp
@@ -117,10 +163,13 @@ async function putSpp(idSpp, body) {
   if (!Number.isNaN(Number.parseInt(idSpp))) {
     let data = {};
 
-    const regex = new RegExp("tahun|nominal|angkatan");
+    const regex = new RegExp("angkatan|nominal");
 
     for (key in body) {
-      if (regex.test(key) && Number.isNaN(Number.parseInt(body[key]))) {
+      if (
+        (regex.test(key) && Number.isNaN(Number.parseInt(body[key]))) ||
+        (key == "tahun" && !verifyDate(body[key]).year)
+      ) {
         return errorHandling.BAD_REQ;
       }
       data[key] = body[key];
@@ -175,6 +224,7 @@ async function delSpp(idSpp) {
 module.exports = {
   getSpp,
   getSppbyId,
+  getLatestSpp,
   insSpp,
   putSpp,
   delSpp,

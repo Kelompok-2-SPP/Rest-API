@@ -174,9 +174,9 @@ async function putSiswa(nisn, body) {
       }
       if (key == "password") {
         data[key] = await passEncrypt("siswa", body[key]);
-      } else {
-        data[key] = body[key];
+        continue;
       }
+      data[key] = body[key];
     }
 
     return await siswa

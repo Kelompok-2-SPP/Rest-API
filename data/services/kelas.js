@@ -135,8 +135,8 @@ async function putKelas(idKelas, body) {
           .then((find) => {
             if (find) {
               return find;
-            }else{
-              return errorHandling.NOT_FOUND
+            } else {
+              return errorHandling.NOT_FOUND;
             }
           })
           .catch((error) => {

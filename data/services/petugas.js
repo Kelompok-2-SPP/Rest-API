@@ -72,7 +72,7 @@ async function getPetugas(keyword, size, page) {
     });
 }
 
-async function getPetugasByUsername(username) {
+async function getPetugasByUsernameAuth(username) {
   if (username) {
     return await petugas
       .findOne({ where: { username: username } })
@@ -149,9 +149,9 @@ async function putPetugas(idPetugas, body) {
 
       if (key == "password") {
         data[key] = await passEncrypt("petugas", body[key]);
-      } else {
-        data[key] = body[key];
+        continue;
       }
+      data[key] = body[key];
     }
 
     return await petugas
@@ -206,7 +206,7 @@ async function delPetugas(idPetugas) {
 module.exports = {
   getPetugas,
   getPetugasbyId,
-  getPetugasByUsername,
+  getPetugasByUsernameAuth,
   insPetugas,
   putPetugas,
   delPetugas,

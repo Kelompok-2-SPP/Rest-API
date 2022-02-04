@@ -9,32 +9,26 @@ let token = null;
 // Response interface
 class FixedResponse {
   constructor(code = 500, message = "", details = null) {
+    this.status = code;
     // Error handling and response
     switch (code) {
       // case 404
       case 404:
-        this.status = code;
         this.message = "Data were not found";
-        this.details = details;
         break;
       // case 400
       case 400:
-        this.status = code;
         this.message = "Bad request, please read the documentation";
-        this.details = details;
         break;
       // case 500
       case 500:
-        this.status = code;
         this.message = "Something went wrong on server side, " + message;
-        this.details = details;
         break;
       // default response
       default:
-        this.status = code;
         this.message = message;
-        this.details = details;
     }
+    this.details = details;
   }
 }
 
@@ -47,15 +41,28 @@ class Paged {
   }
 }
 
+// Tunggakan Response interface
+class Tunggakan {
+  constructor(
+    nisn = null,
+    jumlahTunggakan = 0,
+    totalTunggakan = 0,
+    tunggakan = null
+  ) {
+    this.nisn = nisn;
+    this.jumlah_tunggakan = jumlahTunggakan;
+    this.total_tunggakan = totalTunggakan;
+    this.tunggakan = tunggakan;
+  }
+}
+
 // Check nuul
 checkNull = async (data) => {
   let nullData = "";
 
   // literate through data
   for (const [keys, values] of Object.entries(data)) {
-    if (values == null) {
-      nullData += ", " + keys;
-    }
+    nullData += values == null ? ", " + keys : "";
   }
 
   return nullData;
@@ -159,55 +166,57 @@ accessLimit = (roles) => {
 
 passEncrypt = async (type, password) => {
   const saltRound = 10;
-  let pas = "";
-
-  if (type == "siswa") {
-    pas = password + secretKey.siswa;
-  } else {
-    pas = password + secretKey.petugas;
-  }
 
   // Begin encryption using bcrypt
-  return await bcrypt.hash(pas, saltRound);
-};
-
-passDecrypt = async (type, password, hashed) => {
-  let pas = "";
-
-  if (type == "siswa") {
-    pas = password + secretKey.siswa;
-  } else {
-    pas = password + secretKey.petugas;
-  }
-
-  return await bcrypt.compare(pas, hashed);
-};
-
-verifyDate = (date) => {
-  return (
-    moment(date, "DD/MM/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
-    moment(date, "D/MM/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
-    moment(date, "DD/M/YYYY", true).utcOffset(dbConfig.timezone).isValid() ||
-    moment(date, "D/M/YYYY", true).utcOffset(dbConfig.timezone).isValid()
+  return await bcrypt.hash(
+    type == "siswa" ? password + secretKey.siswa : password + secretKey.petugas,
+    saltRound
   );
 };
 
-parseDate = (date) => {
+passDecrypt = async (type, password, hashed) => {
+  return await bcrypt.compare(
+    type == "siswa" ? password + secretKey.siswa : password + secretKey.petugas,
+    hashed
+  );
+};
+
+verifyDate = (date) => {
+  return {
+    date:
+      moment(date, "DD/MM/YYYY", true).isValid() ||
+      moment(date, "D/MM/YYYY", true).isValid() ||
+      moment(date, "DD/M/YYYY", true).isValid() ||
+      moment(date, "D/M/YYYY", true).isValid(),
+    day:
+      moment(date, "DD", true).isValid() || moment(date, "D", true).isValid(),
+    month:
+      moment(date, "MM", true).isValid() || moment(date, "M", true).isValid(),
+    year: moment(date, "YYYY", true).isValid(),
+  };
+};
+
+formatDate = (date) => {
   const dat = moment(date, "DD/MM/YYYY").utcOffset(dbConfig.timezone);
   return {
-    date: dat.format(),
+    string: dat.format(),
+    day: dat.day(),
     month: dat.month() + 1,
     year: dat.year(),
   };
 };
 
 passedMonth = (date) => {
-  const now = moment.utcOffset(dbConfig.timezone).now()
-  
-}
+  const now = moment(moment.now()).utcOffset(dbConfig.timezone);
+  const dat = moment(date, "MM/YYYY");
+
+  const diff = now.diff(dat, "months");
+  return diff < 0 ? null : Math.floor(diff);
+};
 
 module.exports = {
   Paged,
+  Tunggakan,
   passEncrypt,
   passDecrypt,
   authVerify,
@@ -215,5 +224,6 @@ module.exports = {
   accessLimit,
   checkNull,
   verifyDate,
-  parseDate,
+  formatDate,
+  passedMonth,
 };

@@ -6,6 +6,7 @@ const errorHandling = {
   BAD_REQ: "Bad request",
 };
 
+// Dbb Config
 const dbConfig = {
   username: "root",
   password: null,
@@ -21,8 +22,15 @@ const secretKey = {
   siswa: "siswaSPP",
 };
 
+// Roles
+const roles = {
+  admin: "admin",
+  petugas: "petugas",
+};
+
 module.exports = {
   errorHandling,
+  dbConfig,
   secretKey,
-  dbConfig
+  roles,
 };
