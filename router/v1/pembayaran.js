@@ -67,7 +67,11 @@ app.get("/", async (req, res) => {
           as: "spp",
         },
       ],
-      order: [["updatedAt", "DESC"]],
+      order: [
+        ["tahun_spp", "DESC"],
+        ["bulan_spp", "DESC"],
+        ["updatedAt", "DESC"],
+      ],
     })
     .then((pembayaran) => {
       if (pembayaran.length > 0) {

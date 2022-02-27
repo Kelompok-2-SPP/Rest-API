@@ -80,7 +80,11 @@ async function getPembayaran(keyword, size, page) {
           as: "spp",
         },
       ],
-      order: [["updatedAt", "DESC"]],
+      order: [
+        ["tahun_spp", "DESC"],
+        ["bulan_spp", "DESC"],
+        ["updatedAt", "DESC"],
+      ],
     })
     .then((data) => {
       if (data.count > 0) {
