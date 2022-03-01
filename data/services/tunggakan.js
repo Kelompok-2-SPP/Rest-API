@@ -102,8 +102,9 @@ async function calculateTunggakan(nisn) {
           return new Tunggakan(nisn, 0, 0, null);
         } else {
           // If month difference is bigger than one
+          passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp)
           if (
-            passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp) >= 1
+            passed >= 1
           ) {
             let year = tunggakan.tahun_spp;
             let month = tunggakan.bulan_spp;
