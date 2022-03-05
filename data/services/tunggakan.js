@@ -78,14 +78,20 @@ async function addTunggakan(nisn, month, year) {
         return errorHandling.NOT_FOUND;
       } else {
         await pembayaran
-          .create({
-            nisn: nisn,
-            id_spp: idSpp.id_spp,
-            bulan_spp: month,
-            tahun_spp: year,
-          })
-          .catch((err) => {
-            throw err;
+          .count({ where: { bulan_spp: month, tahun_spp: year } })
+          .then(async (count) => {
+            if (count == 0) {
+              await pembayaran
+                .create({
+                  nisn: nisn,
+                  id_spp: idSpp.id_spp,
+                  bulan_spp: month,
+                  tahun_spp: year,
+                })
+                .catch((err) => {
+                  throw err;
+                });
+            }
           });
       }
     })
@@ -102,10 +108,8 @@ async function calculateTunggakan(nisn) {
           return new Tunggakan(nisn, 0, 0, null);
         } else {
           // If month difference is bigger than one
-          passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp)
-          if (
-            passed >= 1
-          ) {
+          passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp);
+          if (passed >= 1) {
             let year = tunggakan.tahun_spp;
             let month = tunggakan.bulan_spp;
 
