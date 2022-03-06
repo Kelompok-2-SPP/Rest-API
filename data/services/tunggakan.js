@@ -78,7 +78,7 @@ async function addTunggakan(nisn, month, year) {
         return errorHandling.NOT_FOUND;
       } else {
         await pembayaran
-          .count({ where: { bulan_spp: month, tahun_spp: year } })
+          .count({ where: { bulan_spp: month, tahun_spp: year, nisn: nisn } })
           .then(async (count) => {
             if (count == 0) {
               await pembayaran
