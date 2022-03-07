@@ -288,7 +288,7 @@ app.put("/", accessLimit(["admin"]), async (req, res) => {
             details: null,
           });
         });
-    } else if (!nisn && !nis) {
+    } else if (!nisn || !nis) {
       res.status(409).json({
         status: res.statusCode,
         message: "Nisn or Nis has been used, Try different nisn or nis",
