@@ -110,7 +110,10 @@ async function getLatestSpp(nisn, year) {
                   [Op.lte]: year,
                 },
               },
-              order: [["updatedAt", "DESC"]],
+              order: [
+                ["updatedAt", "DESC"],
+                ["tahun", "DESC"],
+              ],
             })
             .then((data) => {
               if (data) {

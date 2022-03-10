@@ -210,8 +210,8 @@ passedMonth = (date) => {
   const now = moment(moment.now()).utcOffset(dbConfig.timezone);
   const dat = moment(date, "MM/YYYY");
 
-  const diff = now.diff(dat, "months");
-  return diff < 0 ? null : Math.floor(diff);
+  const diff = now.diff(dat, "months", true);
+  return Math.round(diff);
 };
 
 module.exports = {

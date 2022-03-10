@@ -118,7 +118,7 @@ app.post("/", accessLimit(["admin"]), async (req, res) => {
                   res.status(201).json({
                     status: res.statusCode,
                     message: "Data has been inserted",
-                    data: result,
+                    details: result,
                   });
                 })
                 .catch((error) => {

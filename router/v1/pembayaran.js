@@ -313,7 +313,7 @@ app.delete("/", accessLimit(["admin"]), async (req, res) => {
               res.status(200).json({
                 status: res.statusCode,
                 message: "Data succesfully deleted",
-                data: resu,
+                details: resu,
               })
             )
             .catch((error) => {
