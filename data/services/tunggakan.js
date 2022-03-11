@@ -40,17 +40,11 @@ async function getTunggakanFromPembayaran(nisn) {
     });
 }
 
-async function getLatestTunggakanFromPembayaran(nisn) {
+async function getLatestFromPembayaran(nisn) {
   return await pembayaran
     .findOne({
       where: {
         nisn: nisn,
-        jumlah_bayar: {
-          [Op.or]: [
-            { [Op.lt]: { [Op.col]: "spp.nominal" } },
-            { [Op.is]: null },
-          ],
-        },
       },
       attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
       include: ["spp", { model: spp, as: "spp" }],
@@ -102,26 +96,22 @@ async function addTunggakan(nisn, month, year) {
 
 async function calculateTunggakan(nisn) {
   if (nisn) {
-    return await getLatestTunggakanFromPembayaran(nisn).then(
+    return await getLatestFromPembayaran(nisn).then(
       async (tunggakan) => {
-        if (tunggakan == errorHandling.NOT_FOUND) {
-          return new Tunggakan(nisn, 0, 0, null);
-        } else {
-          // If month difference is bigger than one
-          passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp);
-          if (passed >= 1) {
-            let year = tunggakan.tahun_spp;
-            let month = tunggakan.bulan_spp;
+        // If month difference is bigger than one
+        passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp);
+        if (passed >= 1) {
+          let year = tunggakan.tahun_spp;
+          let month = tunggakan.bulan_spp;
 
-            for (let i = 0; i < passed; i++) {
-              if (month == 12) {
-                (month = 0), (month += 1), (year += 1);
-              } else {
-                month += 1;
-              }
-
-              await addTunggakan(nisn, month, year);
+          for (let i = 0; i < passed; i++) {
+            if (month == 12) {
+              (month = 0), (month += 1), (year += 1);
+            } else {
+              month += 1;
             }
+
+            await addTunggakan(nisn, month, year);
           }
 
           return await getTunggakanFromPembayaran(nisn)
