@@ -98,20 +98,24 @@ async function calculateTunggakan(nisn) {
   if (nisn) {
     return await getLatestFromPembayaran(nisn).then(
       async (tunggakan) => {
-        // If month difference is bigger than one
-        passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp);
-        if (passed >= 1) {
-          let year = tunggakan.tahun_spp;
-          let month = tunggakan.bulan_spp;
+        if (tunggakan == errorHandling.NOT_FOUND) {
+          return new Tunggakan(nisn, 0, 0, null);
+        } else {
+          // If month difference is bigger than one
+          passed = passedMonth(tunggakan.bulan_spp + "/" + tunggakan.tahun_spp);
+          if (passed >= 1) {
+            let year = tunggakan.tahun_spp;
+            let month = tunggakan.bulan_spp;
 
-          for (let i = 0; i < passed; i++) {
-            if (month == 12) {
-              (month = 0), (month += 1), (year += 1);
-            } else {
-              month += 1;
+            for (let i = 0; i < passed; i++) {
+              if (month == 12) {
+                (month = 0), (month += 1), (year += 1);
+              } else {
+                month += 1;
+              }
+
+              await addTunggakan(nisn, month, year);
             }
-
-            await addTunggakan(nisn, month, year);
           }
 
           return await getTunggakanFromPembayaran(nisn)
