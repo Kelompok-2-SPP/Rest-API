@@ -98,9 +98,9 @@ async function getPembayaran(keyword, size, page) {
     });
 }
 
-async function getPembayaranByNisn(id, size, page) {
+async function getPembayaranByNisn(nisn, size, page) {
   // Initiate like opertaor
-  const data = {nisn: id};
+  const data = {nisn: nisn};
 
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
@@ -400,7 +400,7 @@ async function delPembayaran(idPembayaran) {
 
 module.exports = {
   getPembayaran,
-  getPembayaranByNisnOridPetugas,
+  getPembayaranByNisn,
   getPembayaranbyId,
   insPembayaran,
   putPembayaran,

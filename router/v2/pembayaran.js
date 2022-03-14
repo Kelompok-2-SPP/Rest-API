@@ -54,7 +54,7 @@ app.get("/", async (req, res) => {
       });
   } else if (nisn) {
     await pembayaran
-      .getPembayaranByNisnOridPetugas(nisn, size, page)
+      .getPembayaranByNisn(nisn, size, page)
       .then((data) => {
         switch (data) {
           // Check data is found or not
