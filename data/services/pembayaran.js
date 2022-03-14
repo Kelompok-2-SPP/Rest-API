@@ -98,21 +98,9 @@ async function getPembayaran(keyword, size, page) {
     });
 }
 
-async function getPembayaranByNisnOridPetugas(id, size, page) {
+async function getPembayaranByNisn(id, size, page) {
   // Initiate like opertaor
-  const data =
-    keyword == null
-      ? {}
-      : {
-          [Op.or]: [
-            {
-              nisn: { [Op.like]: `%${id}%` },
-            },
-            {
-              id_petugas: { [Op.like]: `%${id}%` },
-            },
-          ],
-        };
+  const data = {nisn: id};
 
   // Check if number or not
   sizeAsNum = Number.parseInt(size);

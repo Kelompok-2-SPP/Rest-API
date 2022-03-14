@@ -19,42 +19,13 @@ app.use(express.urlencoded({ extended: true }));
 // -- GET
 app.get("/", async (req, res) => {
   // Fetch data from query params
-  const { id_pembayaran, id_petugas, nisn, keyword, size, page } = req.query;
+  const { id_pembayaran, nisn, keyword, size, page } = req.query;
 
   // Check if have id_pembayaran param
   if (id_pembayaran) {
     // Call services getPembayaranbyId
     await pembayaran
       .getPembayaranbyId(id_pembayaran)
-      .then((data) => {
-        switch (data) {
-          // Check data is found or not
-          case errorHandling.NOT_FOUND:
-            res.status(404).json(new FixedResponse((code = res.statusCode)));
-            break;
-          case errorHandling.BAD_REQ:
-            res.status(400).json(new FixedResponse(res.statusCode));
-            break;
-          // Return data to user
-          default:
-            res
-              .status(200)
-              .json(
-                new FixedResponse(
-                  (code = res.statusCode),
-                  (message = ""),
-                  (details = data)
-                )
-              );
-        }
-        // Throw if have server error
-      })
-      .catch((err) => {
-        res.status(500).json(new FixedResponse(res.statusCode, err.message));
-      });
-  } else if (id_petugas) {
-    await pembayaran
-      .getPembayaranByNisnOridPetugas(id_petugas, size, page)
       .then((data) => {
         switch (data) {
           // Check data is found or not
