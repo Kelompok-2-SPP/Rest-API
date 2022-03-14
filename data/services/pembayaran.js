@@ -80,10 +80,84 @@ async function getPembayaran(keyword, size, page) {
           as: "spp",
         },
       ],
+      order: [["updatedAt", "DESC"]],
+    })
+    .then((data) => {
+      if (data.count > 0) {
+        return new Paged(
+          (count = data.count),
+          (content = data.rows),
+          (totalPages = Math.ceil(data.count / size))
+        );
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
+    })
+    .catch((error) => {
+      throw error;
+    });
+}
+
+async function getPembayaranByNisnOridPetugas(id, size, page) {
+  // Initiate like opertaor
+  const data =
+    keyword == null
+      ? {}
+      : {
+          [Op.or]: [
+            {
+              nisn: { [Op.like]: `%${id}%` },
+            },
+            {
+              id_petugas: { [Op.like]: `%${id}%` },
+            },
+          ],
+        };
+
+  // Check if number or not
+  sizeAsNum = Number.parseInt(size);
+  pageAsNum = Number.parseInt(page);
+
+  let paged = 0;
+  if (!Number.isNaN(pageAsNum) && pageAsNum > 0) {
+    paged = pageAsNum;
+  }
+
+  let sized = 10;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
+    sized = sizeAsNum;
+  }
+
+  // Return with findandcountall
+  return await pembayaran
+    .findAndCountAll({
+      limit: sized,
+      offset: paged * sized,
+      where: data,
+      attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+      include: [
+        "petugas",
+        {
+          model: petugas,
+          as: "petugas",
+          attributes: { exclude: ["password"] },
+        },
+        "siswa",
+        {
+          model: siswa,
+          as: "siswa",
+          attributes: { exclude: ["password", "id_kelas"] },
+          include: ["kelas", { model: kelas, as: "kelas" }],
+        },
+        "spp",
+        {
+          model: spp,
+          as: "spp",
+        },
+      ],
       order: [
         ["tahun_spp", "DESC"],
         ["bulan_spp", "DESC"],
-        ["updatedAt", "DESC"],
       ],
     })
     .then((data) => {
@@ -338,6 +412,7 @@ async function delPembayaran(idPembayaran) {
 
 module.exports = {
   getPembayaran,
+  getPembayaranByNisnOridPetugas,
   getPembayaranbyId,
   insPembayaran,
   putPembayaran,

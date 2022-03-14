@@ -20,6 +20,9 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
+  let orders = [
+    ["updatedAt", "DESC"],
+  ];
 
   if (req.query.keyword) {
     data = {
@@ -42,6 +45,13 @@ app.get("/", async (req, res) => {
     for (key in req.query) {
       data[key] = req.query[key];
     }
+  }
+
+  if(req.query.nisn) {
+    orders = [
+      ["tahun_spp", "DESC"],
+      ["bulan_spp", "DESC"],
+    ];
   }
 
   await pembayaran
@@ -67,11 +77,7 @@ app.get("/", async (req, res) => {
           as: "spp",
         },
       ],
-      order: [
-        ["tahun_spp", "DESC"],
-        ["bulan_spp", "DESC"],
-        ["updatedAt", "DESC"],
-      ],
+      order: orders
     })
     .then((pembayaran) => {
       if (pembayaran.length > 0) {
