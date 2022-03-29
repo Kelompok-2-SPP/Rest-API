@@ -26,7 +26,11 @@ app.use("/api/v2/petugas", routerV2.petugas);
 app.use("/api/v2/pembayaran", routerV2.pembayaran);
 
 app.use("/ping", (req, res) => {
-  res.status(200).send("Pong")
+  res.status(200).json({
+    status: res.statusCode,
+    message: "Pong",
+    details: null,
+  });
 });
 
 // NOT FOUND FALLBACK TO DOCUMENTATION
