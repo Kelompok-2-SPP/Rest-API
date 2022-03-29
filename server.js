@@ -25,8 +25,12 @@ app.use("/api/v2/kelas", routerV2.kelas);
 app.use("/api/v2/petugas", routerV2.petugas);
 app.use("/api/v2/pembayaran", routerV2.pembayaran);
 
+app.use("/ping", (req, res) => {
+  res.status(200).send("Pong")
+});
+
 // NOT FOUND FALLBACK TO DOCUMENTATION
-app.use(function (req, res) {
+app.use((req, res) => {
   res.redirect("https://documenter.getpostman.com/view/19193294/UVXkpb1a");
 });
 
