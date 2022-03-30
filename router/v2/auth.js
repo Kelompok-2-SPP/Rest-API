@@ -1,7 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const services = require("../../data/services");
-const { secretKey, errorHandling, roles } = require("../../domain/const");
+const { secretKey, errorHandling, roles, jwtHeader } = require("../../domain/const");
 const { FixedResponse, passDecrypt, checkNull } = require("../../domain/utils");
 
 const app = express();
@@ -40,7 +40,8 @@ app.post("/", async (req, res) => {
                     "createdAt",
                     "updatedAt",
                   ]),
-                  secretKey.petugas
+                  secretKey.petugas + data.password,
+                  jwtHeader
                 ),
               })
             )
@@ -89,7 +90,8 @@ app.post("/", async (req, res) => {
                     "cretedAt",
                     "updatedAt",
                   ]),
-                  secretKey.siswa
+                  secretKey.siswa + data.password,
+                  jwtHeader
                 ),
               })
             )

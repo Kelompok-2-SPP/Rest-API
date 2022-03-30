@@ -22,15 +22,25 @@ const secretKey = {
   siswa: "siswaSPP",
 };
 
+// JWT Header 
+const jwtHeader = {
+  algorithm: "HS256",
+}
+
 // Roles
 const roles = {
   admin: "admin",
   petugas: "petugas",
 };
 
+// Default pagination number
+const paginationNumber = 10
+
 module.exports = {
   errorHandling,
   dbConfig,
   secretKey,
   roles,
+  jwtHeader,
+  paginationNumber
 };

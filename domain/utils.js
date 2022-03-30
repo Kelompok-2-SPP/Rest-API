@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
-const { secretKey, dbConfig } = require("./const");
+const { secretKey, dbConfig, jwtHeader } = require("./const");
 
 // Initiate token as null
 let token = null;
@@ -70,10 +70,6 @@ checkNull = async (data) => {
 
 // Verify aaccount
 authVerify = async (req, res, next) => {
-  const jwtHeader = {
-    algorithm: "HS256",
-  };
-
   // get header
   const header = req.headers.authorization;
 
@@ -81,28 +77,40 @@ authVerify = async (req, res, next) => {
   if (header != null) {
     token = header.split(" ")[1];
 
-    jwt.verify(token, secretKey.petugas, jwtHeader, (err) => {
-      if (err) {
-        jwt.verify(token, secretKey.siswa, jwtHeader, (err) => {
-          if (err) {
-            res.status(401).json(
-              new FixedResponse(
-                (code = res.statusCode),
-                (message = "Token invalid"),
-                (details = {
-                  logged: false,
-                  token: token,
-                })
-              )
-            );
-          } else {
-            next();
-          }
-        });
-      } else {
-        next();
+    jwt.verify(
+      token,
+      secretKey.petugas,
+      jwtHeader + { complete: true },
+      (err, dcd) => {
+        if (err) {
+          jwt.verify(
+            token,
+            secretKey.siswa,
+            jwtHeader + { complete: true },
+            (err, dcd) => {
+              if (err) {
+                res.status(401).json(
+                  new FixedResponse(
+                    (code = res.statusCode),
+                    (message = "Token invalid"),
+                    (details = {
+                      logged: false,
+                      token: token,
+                    })
+                  )
+                );
+              } else {
+                req.payload = dcd.payload;
+                next();
+              }
+            }
+          );
+        } else {
+          req.payload = dcd.payload;
+          next();
+        }
       }
-    });
+    );
   } else {
     res.status(401).json(
       new FixedResponse(
@@ -119,7 +127,7 @@ authVerify = async (req, res, next) => {
 
 // Roles access
 accessLimit = (roles) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     jwt.verify(
       token,
       secretKey.petugas,
@@ -196,16 +204,6 @@ verifyDate = (date) => {
   };
 };
 
-formatDate = (date) => {
-  const dat = moment(date, "DD/MM/YYYY").utcOffset(dbConfig.timezone);
-  return {
-    string: dat.format(),
-    day: dat.day(),
-    month: dat.month() + 1,
-    year: dat.year(),
-  };
-};
-
 passedMonth = (date) => {
   const now = moment(moment.now()).utcOffset(dbConfig.timezone);
   const dat = moment(date, "MM/YYYY");
@@ -224,6 +222,5 @@ module.exports = {
   accessLimit,
   checkNull,
   verifyDate,
-  formatDate,
   passedMonth,
 };

@@ -1,11 +1,16 @@
 const sequelize = require("sequelize");
 const models = require("../models");
-const { errorHandling } = require("../../domain/const");
+const { errorHandling, paginationNumber } = require("../../domain/const");
 const { Paged, passEncrypt } = require("../../domain/utils");
 
 const Op = sequelize.Op;
 const siswa = models.siswa;
 const kelas = models.kelas;
+
+const baseOptions = {
+  attributes: { exclude: ["password", "id_kelas"] },
+  include: ["kelas", { model: kelas, as: "kelas" }],
+};
 
 async function getSiswa(keyword, size, page) {
   // Initiate like opertaor
@@ -41,21 +46,21 @@ async function getSiswa(keyword, size, page) {
     paged = pageAsNum;
   }
 
-  let sized = 10;
-  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
+  let sized = paginationNumber;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
     sized = sizeAsNum;
   }
 
   // Return with findandcountall
   return await siswa
-    .findAndCountAll({
-      limit: sized,
-      offset: paged * sized,
-      where: data,
-      attributes: { exclude: ["password", "id_kelas"] },
-      include: ["kelas", { model: kelas, as: "kelas" }],
-      order: [["nama", "ASC"]],
-    })
+    .findAndCountAll(
+      {
+        limit: sized,
+        offset: paged * sized,
+        where: data,
+        order: [["nama", "ASC"]],
+      } + baseOptions
+    )
     .then(async (data) => {
       if (data.count > 0) {
         return new Paged(
@@ -94,10 +99,7 @@ async function getSiswabyIdAuth(nisn) {
 async function getSiswabyId(nisn) {
   if (nisn) {
     return await siswa
-      .findByPk(nisn, {
-        attributes: { exclude: ["password", "id_kelas"] },
-        include: ["kelas", { model: kelas, as: "kelas" }],
-      })
+      .findByPk(nisn, baseOptions)
       .then((data) => {
         if (data) {
           return data;
@@ -137,10 +139,7 @@ async function insSiswa(nisn, password, nis, nama, idKelas, alamat, noTelp) {
       .create(data)
       .then(async (data) => {
         return await siswa
-          .findByPk(data.nisn, {
-            attributes: { exclude: ["password", "id_kelas"] },
-            include: ["kelas", { model: kelas, as: "kelas" }],
-          })
+          .findByPk(data.nisn, baseOptions)
           .then((datas) => {
             return datas;
           })
@@ -183,10 +182,7 @@ async function putSiswa(nisn, body) {
       .update(data, { where: { nisn: nisn } })
       .then(async () => {
         return await siswa
-          .findByPk(data.nisn ? data.nisn : nisn, {
-            attributes: { exclude: ["password"] },
-            include: ["kelas", { model: kelas, as: "kelas" }],
-          })
+          .findByPk(data.nisn ? data.nisn : nisn, baseOptions)
           .then((find) => {
             if (find) {
               return find;
@@ -215,10 +211,7 @@ async function putSiswa(nisn, body) {
 async function delSiswa(nisn) {
   if (nisn) {
     return await siswa
-      .findByPk(nisn, {
-        attributes: { exclude: ["password"] },
-        include: ["kelas", { model: kelas, as: "kelas" }],
-      })
+      .findByPk(nisn, baseOptions)
       .then(async (data) => {
         if (data) {
           await siswa.destroy({ where: { nisn: nisn } }).catch((err) => {

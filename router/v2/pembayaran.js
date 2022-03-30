@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 // -- GET
 app.get("/", async (req, res) => {
   // Fetch data from query params
-  const { id_pembayaran, nisn, keyword, size, page } = req.query;
+  const { id_pembayaran, nisn, id_petugas, keyword, size, page } = req.query;
 
   // Check if have id_pembayaran param
   if (id_pembayaran) {
@@ -52,9 +52,9 @@ app.get("/", async (req, res) => {
       .catch((err) => {
         res.status(500).json(new FixedResponse(res.statusCode, err.message));
       });
-  } else if (nisn) {
+  } else if (nisn || id_petugas) {
     await pembayaran
-      .getPembayaranByNisn(nisn, size, page)
+      .getPembayaranByNisn(nisn ? nisn : id_petugas, size, page)
       .then((data) => {
         switch (data) {
           // Check data is found or not
@@ -112,11 +112,11 @@ app.get("/", async (req, res) => {
 // -- GET TUNGGAKAN
 app.get("/tunggakan", async (req, res) => {
   // Fetch data from query params
-  const { nisn } = req.query;
+  const { nisn, isList = false || 0 } = req.query;
 
   if (nisn) {
     await tunggakan
-      .calculateTunggakan(nisn)
+      .calculateTunggakan(nisn, isList)
       .then((data) => {
         if (data == errorHandling.BAD_REQ) {
           res.status(400).json(new FixedResponse(res.statusCode));

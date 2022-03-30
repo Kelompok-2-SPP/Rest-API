@@ -1,6 +1,6 @@
 const sequelize = require("sequelize");
 const models = require("../models");
-const { errorHandling } = require("../../domain/const");
+const { errorHandling, paginationNumber } = require("../../domain/const");
 const { Paged } = require("../../domain/utils");
 
 const Op = sequelize.Op;
@@ -41,8 +41,8 @@ async function getKelas(keyword, size, page) {
     paged = pageAsNum;
   }
 
-  let sized = 10;
-  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
+  let sized = paginationNumber;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
     sized = sizeAsNum;
   }
 

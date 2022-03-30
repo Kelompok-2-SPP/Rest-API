@@ -32,7 +32,7 @@ app.post("/", async (req, res) => {
                     "createdAt",
                     "updatedAt",
                   ]),
-                  secretKey.petugas
+                  secretKey.petugas + found.password
                 ),
               },
             });
@@ -88,7 +88,7 @@ app.post("/", async (req, res) => {
                     "cretedAt",
                     "updatedAt",
                   ]),
-                  secretKey.siswa
+                  secretKey.siswa + found.password
                 ),
               },
             });

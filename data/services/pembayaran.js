@@ -1,6 +1,6 @@
 const sequelize = require("sequelize");
 const models = require("../models");
-const { errorHandling } = require("../../domain/const");
+const { errorHandling, paginationNumber } = require("../../domain/const");
 const { Paged, verifyDate, formatDate } = require("../../domain/utils");
 
 const Op = sequelize.Op;
@@ -10,6 +10,30 @@ const petugas = models.petugas;
 const siswa = models.siswa;
 const spp = models.spp;
 const kelas = models.kelas;
+
+const baseOptions = {
+  attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+  include: [
+    "petugas",
+    {
+      model: petugas,
+      as: "petugas",
+      attributes: { exclude: ["password"] },
+    },
+    "siswa",
+    {
+      model: siswa,
+      as: "siswa",
+      attributes: { exclude: ["password", "id_kelas"] },
+      include: ["kelas", { model: kelas, as: "kelas" }],
+    },
+    "spp",
+    {
+      model: spp,
+      as: "spp",
+    },
+  ],
+};
 
 async function getPembayaran(keyword, size, page) {
   // Initiate like opertaor
@@ -48,40 +72,24 @@ async function getPembayaran(keyword, size, page) {
     paged = pageAsNum;
   }
 
-  let sized = 10;
-  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
+  let sized = paginationNumber;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
     sized = sizeAsNum;
   }
 
   // Return with findandcountall
   return await pembayaran
-    .findAndCountAll({
-      limit: sized,
-      offset: paged * sized,
-      where: data,
-      attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-      include: [
-        "petugas",
+    .findAndCountAll(
+      Object.assign(
         {
-          model: petugas,
-          as: "petugas",
-          attributes: { exclude: ["password"] },
+          limit: sized,
+          offset: paged * sized,
+          where: data,
+          order: [["updatedAt", "DESC"]],
         },
-        "siswa",
-        {
-          model: siswa,
-          as: "siswa",
-          attributes: { exclude: ["password", "id_kelas"] },
-          include: ["kelas", { model: kelas, as: "kelas" }],
-        },
-        "spp",
-        {
-          model: spp,
-          as: "spp",
-        },
-      ],
-      order: [["updatedAt", "DESC"]],
-    })
+        baseOptions
+      )
+    )
     .then((data) => {
       if (data.count > 0) {
         return new Paged(
@@ -100,7 +108,7 @@ async function getPembayaran(keyword, size, page) {
 
 async function getPembayaranByNisn(nisn, size, page) {
   // Initiate like opertaor
-  const data = {nisn: nisn};
+  const data = { nisn: nisn };
 
   // Check if number or not
   sizeAsNum = Number.parseInt(size);
@@ -111,43 +119,71 @@ async function getPembayaranByNisn(nisn, size, page) {
     paged = pageAsNum;
   }
 
-  let sized = 10;
-  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < 10) {
+  let sized = paginationNumber;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
     sized = sizeAsNum;
   }
 
   // Return with findandcountall
   return await pembayaran
-    .findAndCountAll({
-      limit: sized,
-      offset: paged * sized,
-      where: data,
-      attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-      include: [
-        "petugas",
-        {
-          model: petugas,
-          as: "petugas",
-          attributes: { exclude: ["password"] },
-        },
-        "siswa",
-        {
-          model: siswa,
-          as: "siswa",
-          attributes: { exclude: ["password", "id_kelas"] },
-          include: ["kelas", { model: kelas, as: "kelas" }],
-        },
-        "spp",
-        {
-          model: spp,
-          as: "spp",
-        },
-      ],
-      order: [
-        ["tahun_spp", "DESC"],
-        ["bulan_spp", "DESC"],
-      ],
+    .findAndCountAll(
+      {
+        limit: sized,
+        offset: paged * sized,
+        where: data,
+        order: [
+          ["tahun_spp", "DESC"],
+          ["bulan_spp", "DESC"],
+        ],
+      } + baseOptions
+    )
+    .then((data) => {
+      if (data.count > 0) {
+        return new Paged(
+          (count = data.count),
+          (content = data.rows),
+          (totalPages = Math.ceil(data.count / size))
+        );
+      } else {
+        return errorHandling.NOT_FOUND;
+      }
     })
+    .catch((error) => {
+      throw error;
+    });
+}
+
+async function getPembayaranByNisn(idPetugas, size, page) {
+  // Initiate like opertaor
+  const data = { id_petugas: idPetugas };
+
+  // Check if number or not
+  sizeAsNum = Number.parseInt(size);
+  pageAsNum = Number.parseInt(page);
+
+  let paged = 0;
+  if (!Number.isNaN(pageAsNum) && pageAsNum > 0) {
+    paged = pageAsNum;
+  }
+
+  let sized = paginationNumber;
+  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
+    sized = sizeAsNum;
+  }
+
+  // Return with findandcountall
+  return await pembayaran
+    .findAndCountAll(
+      {
+        limit: sized,
+        offset: paged * sized,
+        where: data,
+        order: [
+          ["tahun_spp", "DESC"],
+          ["bulan_spp", "DESC"],
+        ],
+      } + baseOptions
+    )
     .then((data) => {
       if (data.count > 0) {
         return new Paged(
@@ -168,29 +204,7 @@ async function getPembayaranbyId(idPembayaran) {
   if (!Number.isNaN(Number.parseInt(idPembayaran))) {
     // Return with findone
     return await pembayaran
-      .findByPk(idPembayaran, {
-        attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-        include: [
-          "petugas",
-          {
-            model: petugas,
-            as: "petugas",
-            attributes: { exclude: ["password"] },
-          },
-          "siswa",
-          {
-            model: siswa,
-            as: "siswa",
-            attributes: { exclude: ["password", "id_kelas"] },
-            include: ["kelas", { model: kelas, as: "kelas" }],
-          },
-          "spp",
-          {
-            model: spp,
-            as: "spp",
-          },
-        ],
-      })
+      .findByPk(idPembayaran, baseOptions)
       .then((data) => {
         if (data) {
           return data;
@@ -238,29 +252,7 @@ async function insPembayaran(
       .create(data)
       .then(async (data) => {
         return await pembayaran
-          .findByPk(data.id_pembayaran, {
-            attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-            include: [
-              "petugas",
-              {
-                model: petugas,
-                as: "petugas",
-                attributes: { exclude: ["password"] },
-              },
-              "siswa",
-              {
-                model: siswa,
-                as: "siswa",
-                attributes: { exclude: ["password", "id_kelas"] },
-                include: ["kelas", { model: kelas, as: "kelas" }],
-              },
-              "spp",
-              {
-                model: spp,
-                as: "spp",
-              },
-            ],
-          })
+          .findByPk(data.id_pembayaran, baseOptions)
           .then((datas) => {
             return datas;
           })
@@ -306,29 +298,7 @@ async function putPembayaran(idPembayaran, body) {
       .update(data, { where: { id_pembayaran: idPembayaran } })
       .then(async () => {
         return await pembayaran
-          .findByPk(idPembayaran, {
-            attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-            include: [
-              "petugas",
-              {
-                model: petugas,
-                as: "petugas",
-                attributes: { exclude: ["password"] },
-              },
-              "siswa",
-              {
-                model: siswa,
-                as: "siswa",
-                attributes: { exclude: ["password", "id_kelas"] },
-                include: ["kelas", { model: kelas, as: "kelas" }],
-              },
-              "spp",
-              {
-                model: spp,
-                as: "spp",
-              },
-            ],
-          })
+          .findByPk(idPembayaran, baseOptions)
           .then((find) => {
             if (find) {
               return find;
@@ -355,29 +325,12 @@ async function putPembayaran(idPembayaran, body) {
 async function delPembayaran(idPembayaran) {
   if (!Number.isNaN(idPembayaran)) {
     return await pembayaran
-      .findByPk(idPembayaran, {
-        attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
-        include: [
-          "petugas",
-          {
-            model: petugas,
-            as: "petugas",
-            attributes: { exclude: ["password"] },
-          },
-          "siswa",
-          {
-            model: siswa,
-            as: "siswa",
-            attributes: { exclude: ["password", "id_kelas"] },
-            include: ["kelas", { model: kelas, as: "kelas" }],
-          },
-          "spp",
-          {
-            model: spp,
-            as: "spp",
-          },
-        ],
-      })
+      .findByPk(
+        idPembayaran,
+        {
+          attributes: { exclude: ["id_petugas", "nisn", "id_spp"] },
+        } + baseOptions
+      )
       .then(async (data) => {
         if (data) {
           await pembayaran
