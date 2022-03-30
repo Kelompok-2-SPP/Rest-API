@@ -1,7 +1,7 @@
 const express = require("express");
 const models = require("../../data/models/index");
 const { passDecrypt } = require("../../domain/utils");
-const { secretKey } = require("../../domain/const");
+const { secretKey, jwtHeader } = require("../../domain/const");
 const jwt = require("jsonwebtoken");
 
 const app = express();
@@ -32,7 +32,8 @@ app.post("/", async (req, res) => {
                     "createdAt",
                     "updatedAt",
                   ]),
-                  secretKey.petugas + found.password
+                  secretKey.petugas,
+                  jwtHeader
                 ),
               },
             });
@@ -88,7 +89,8 @@ app.post("/", async (req, res) => {
                     "cretedAt",
                     "updatedAt",
                   ]),
-                  secretKey.siswa + found.password
+                  secretKey.siswa,
+                  jwtHeader
                 ),
               },
             });

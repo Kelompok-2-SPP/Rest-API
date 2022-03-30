@@ -40,7 +40,7 @@ app.post("/", async (req, res) => {
                     "createdAt",
                     "updatedAt",
                   ]),
-                  secretKey.petugas + data.password,
+                  secretKey.petugas,
                   jwtHeader
                 ),
               })
@@ -90,7 +90,7 @@ app.post("/", async (req, res) => {
                     "cretedAt",
                     "updatedAt",
                   ]),
-                  secretKey.siswa + data.password,
+                  secretKey.siswa,
                   jwtHeader
                 ),
               })
