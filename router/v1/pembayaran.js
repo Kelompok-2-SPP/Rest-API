@@ -20,9 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", async (req, res) => {
   let data = {};
-  let orders = [
-    ["updatedAt", "DESC"],
-  ];
+  let orders = [["updatedAt", "DESC"]];
 
   if (req.query.keyword) {
     data = {
@@ -47,7 +45,7 @@ app.get("/", async (req, res) => {
     }
   }
 
-  if(req.query.nisn) {
+  if (req.query.nisn) {
     orders = [
       ["tahun_spp", "DESC"],
       ["bulan_spp", "DESC"],
@@ -77,7 +75,7 @@ app.get("/", async (req, res) => {
           as: "spp",
         },
       ],
-      order: orders
+      order: orders,
     })
     .then((pembayaran) => {
       if (pembayaran.length > 0) {
@@ -109,21 +107,30 @@ app.get("/tunggakan", async (req, res) => {
   const { nisn } = req.query;
 
   if (nisn) {
-    await tunggakan.calculateTunggakan(nisn).then((data) => {
-      if (data == errorHandling.BAD_REQ) {
-        res.status(400).json({
+    await tunggakan
+      .calculateTunggakan(nisn)
+      .then((data) => {
+        if (data == errorHandling.BAD_REQ) {
+          res.status(400).json({
+            status: res.statusCode,
+            message: "Bad request, please read the documentation",
+            details: null,
+          });
+        } else {
+          res.status(200).json({
+            status: res.statusCode,
+            message: "",
+            details: data,
+          });
+        }
+      })
+      .catch((error) => {
+        res.status(500).json({
           status: res.statusCode,
-          message: "Bad request, please read the documentation",
+          message: "Something went wrong on server side, " + error.message,
           details: null,
         });
-      } else {
-        res.status(200).json({
-          status: res.statusCode,
-          message: "",
-          details: data,
-        });
-      }
-    });
+      });
   } else {
     res.status(422).json({
       status: res.statusCode,
