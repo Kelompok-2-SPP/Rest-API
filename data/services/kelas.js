@@ -42,7 +42,11 @@ async function getKelas(keyword, size, page) {
   }
 
   let sized = paginationNumber;
-  if (!Number.isNaN(sizeAsNum) && sizeAsNum > 0 && sizeAsNum < paginationNumber) {
+  if (
+    !Number.isNaN(sizeAsNum) &&
+    sizeAsNum > 0 &&
+    sizeAsNum < paginationNumber
+  ) {
     sized = sizeAsNum;
   }
 
@@ -52,7 +56,10 @@ async function getKelas(keyword, size, page) {
       limit: sized,
       offset: paged * sized,
       where: data,
-      order: [["nama_kelas", "ASC"]],
+      order: [
+        ["angkatan", "ASC"],
+        ["nama_kelas", "ASC"],
+      ],
     })
     .then((data) => {
       if (data.count > 0) {
