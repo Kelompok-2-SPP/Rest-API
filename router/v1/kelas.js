@@ -37,10 +37,7 @@ app.get("/", async (req, res) => {
   await kelas
     .findAll({
       where: data,
-      order: [
-        ["angkatan", "ASC"],
-        ["nama_kelas", "ASC"],
-      ],
+      order: [["angkatan", "ASC"]],
     })
     .then((kelas) => {
       if (kelas.length > 0) {

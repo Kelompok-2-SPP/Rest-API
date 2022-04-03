@@ -56,10 +56,7 @@ async function getKelas(keyword, size, page) {
       limit: sized,
       offset: paged * sized,
       where: data,
-      order: [
-        ["angkatan", "ASC"],
-        ["nama_kelas", "ASC"],
-      ],
+      order: [["angkatan", "ASC"]],
     })
     .then((data) => {
       if (data.count > 0) {
