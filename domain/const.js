@@ -8,10 +8,11 @@ const errorHandling = {
 
 // Dbb Config
 const dbConfig = {
-  username: "root",
-  password: null,
-  database: "pembayaran_spp",
-  host: "127.0.0.1",
+  username: process.env.DB_USERNAME || "root",
+  password: process.env.DB_PASSWORD || null,
+  database: process.env.DB_NAME || "pembayaran_spp",
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: process.env.DB_PORT,
   dialect: "mysql",
   timezone: "+07:00",
 };
@@ -22,10 +23,10 @@ const secretKey = {
   siswa: "siswaSPP",
 };
 
-// JWT Header 
+// JWT Header
 const jwtHeader = {
   algorithm: "HS256",
-}
+};
 
 // Roles
 const roles = {
@@ -34,7 +35,7 @@ const roles = {
 };
 
 // Default pagination number
-const paginationNumber = 10
+const paginationNumber = 10;
 
 module.exports = {
   errorHandling,
@@ -42,5 +43,5 @@ module.exports = {
   secretKey,
   roles,
   jwtHeader,
-  paginationNumber
+  paginationNumber,
 };
